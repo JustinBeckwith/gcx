@@ -1,0 +1,51 @@
+{
+  "name": "gcx",
+  "version": "1.0.0",
+  "description": "",
+  "bin": {
+    "gcx": "./build/src/cli.js"
+  },
+  "main": "./build/src/index.js",
+  "types": "./build/src/index.d.ts",
+  "files": [
+    "build/src"
+  ],
+  "scripts": {
+    "test": "nyc mocha build/test",
+    "check": "gts check",
+    "clean": "gts clean",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run check",
+    "watch": "tsc -p . --watch"
+  },
+  "keywords": [
+    "google",
+    "cloud",
+    "functions",
+    "serverless"
+  ],
+  "author": "Justin Beckwith <justin.beckwith@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/storage": "^2.3.0",
+    "@types/uuid": "^3.4.4",
+    "google-auth-library": "^2.0.1",
+    "googleapis": "^35.0.0",
+    "meow": "^5.0.0",
+    "npm-packlist": "^1.1.12",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/meow": "^5.0.0",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.12.7",
+    "@types/npm-packlist": "^1.1.0",
+    "gts": "^0.9.0",
+    "mocha": "^5.2.0",
+    "nyc": "^13.1.0",
+    "typescript": "~3.1.0"
+  }
+}
