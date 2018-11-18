@@ -1,7 +1,7 @@
 {
   "name": "gcx",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "An API and CLI for deploying Google Cloud Functions in Node.js.",
   "bin": {
     "gcx": "./build/src/cli.js"
   },
@@ -18,7 +18,8 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run check",
-    "watch": "tsc -p . --watch"
+    "watch": "tsc -p . --watch",
+    "coverage": "nyc report --reporter=json && codecov -f coverage/*.json"
   },
   "keywords": [
     "google",
