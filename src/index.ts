@@ -32,6 +32,7 @@ export interface DeployerOptions extends GoogleAuthOptions {
   triggerResource?: string;
   triggerEvent?: string;
   entryPoint?: string;
+  project?: string;
 }
 
 /**
@@ -44,6 +45,9 @@ export class Deployer {
 
   constructor(options: DeployerOptions) {
     this.validateOptions(options);
+    if (options.project) {
+      options.projectId = options.project;
+    }
     this.options = options;
     this.auth = new GoogleAuth(options);
   }

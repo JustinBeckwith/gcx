@@ -39,8 +39,8 @@ const cli = meow(
           an update to an existing function, the function will keep its old
           memory limit unless you specify this flag.
 
-      --projectId=PROJECT_ID
-          ProjectId of the GCP project.
+      --project=PROJECT_ID
+          Project Id of the GCP project.
 
       --trigger-bucket=BUCKET
           Google Cloud Storage bucket name. Every change in files in this
@@ -112,7 +112,7 @@ const cli = meow(
         network: {type: 'string'},
         retry: {type: 'boolean'},
         memory: {type: 'string'},
-        projectId: {type: 'string'},
+        project: {type: 'string'},
         triggerBucket: {type: 'string'},
         triggerHttp: {type: 'boolean'},
         triggerTopic: {type: 'string'},

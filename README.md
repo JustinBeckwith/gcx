@@ -54,8 +54,8 @@ default, a new function is limited to 256MB of memory. When deploying
 an update to an existing function, the function will keep its old
 memory limit unless you specify this flag.
 
-##### --projectId
-ProjectId of the GCP project.
+##### --project
+Project Id of the GCP project.
 
 ##### --trigger-bucket
 Google Cloud Storage bucket name. Every change in files in this
