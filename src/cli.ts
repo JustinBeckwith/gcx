@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import * as meow from 'meow';
-import {Deployer, DeployerOptions} from './';
+import {Deployer, DeployerOptions, ProgressEvent} from './';
 import * as updateNotifier from 'update-notifier';
+import * as ora from 'ora';
 
 const pkg = require('../../package.json');
 updateNotifier({pkg}).notify();
@@ -133,9 +134,40 @@ async function main() {
   }
   switch (cli.input[0]) {
     case 'deploy':
+      const start = Date.now();
       const opts = cli.flags as DeployerOptions;
       opts.name = cli.input[1];
+      const spinny = ora('Initializing deployment...').start();
       const deployinator = new Deployer(opts);
+      deployinator
+        .on(ProgressEvent.PACKAGING, () => {
+          spinny.stopAndPersist({
+            symbol: '🤖',
+            text: 'Deployment initialized.'
+          });
+          spinny.start('Packaging sources...');
+        })
+        .on(ProgressEvent.UPLOADING, () => {
+          spinny.stopAndPersist({
+            symbol: '📦',
+            text: 'Source code packaged.'
+          });
+          spinny.start('Uploading source...');
+        })
+        .on(ProgressEvent.DEPLOYING, () => {
+          spinny.stopAndPersist({
+            symbol: '🛸',
+            text: 'Source uploaded to cloud.'
+          });
+          spinny.start('Deploying function...');
+        })
+        .on(ProgressEvent.COMPLETE, () => {
+          const seconds = (Date.now() - start)/1000;
+          spinny.stopAndPersist({
+            symbol: '🚀',
+            text: `Function deployed in ${seconds} seconds.`
+          });
+        });
       await deployinator.deploy();
       break;
     default:

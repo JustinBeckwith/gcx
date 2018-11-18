@@ -1,5 +1,6 @@
 import * as archiver from 'archiver';
 import {AxiosResponse} from 'axios';
+import {EventEmitter} from 'events';
 import * as fs from 'fs';
 import * as globby from 'globby';
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
@@ -15,6 +16,14 @@ const readFile = util.promisify(fs.readFile);
 type Bag<T = {}> = {
   [index: string]: T;
 };
+
+export enum ProgressEvent {
+  STARTING = 'STARTING',
+  PACKAGING = 'PACKAGING',
+  UPLOADING = 'UPLOADING',
+  DEPLOYING = 'DEPLOYING',
+  COMPLETE = 'COMPLETE',
+}
 
 export interface DeployerOptions extends GoogleAuthOptions {
   name: string;
@@ -38,12 +47,13 @@ export interface DeployerOptions extends GoogleAuthOptions {
 /**
  * Class that provides the `deploy` method.
  */
-export class Deployer {
+export class Deployer extends EventEmitter {
   private options: DeployerOptions;
   private auth: GoogleAuth;
   private gcf?: cloudfunctions_v1.Cloudfunctions;
 
   constructor(options: DeployerOptions) {
+    super();
     this.validateOptions(options);
     if (options.project) {
       options.projectId = options.project;
@@ -56,6 +66,7 @@ export class Deployer {
    * Deploy the current application using the given opts.
    */
   async deploy() {
+    this.emit(ProgressEvent.STARTING);
     const gcf = await this.getGCFClient();
     const projectId = await this.auth.getProjectId();
     const region = this.options.region || 'us-central1';
@@ -64,8 +75,11 @@ export class Deployer {
     const fns = gcf.projects.locations.functions;
     const res = await fns.generateUploadUrl({parent});
     const sourceUploadUrl = res.data.uploadUrl!;
+    this.emit(ProgressEvent.PACKAGING);
     const zipPath = await this.pack();
+    this.emit(ProgressEvent.UPLOADING);
     await this.upload(zipPath, sourceUploadUrl);
+    this.emit(ProgressEvent.DEPLOYING);
     const body = this.buildRequest(parent, sourceUploadUrl);
     const exists = await this.exists(name);
     let result: AxiosResponse<cloudfunctions_v1.Schema$Operation>;
@@ -77,6 +91,7 @@ export class Deployer {
     }
     const operation = result.data;
     await this.poll(operation.name!);
+    this.emit(ProgressEvent.COMPLETE);
   }
 
   /**
