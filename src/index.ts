@@ -48,18 +48,18 @@ export interface DeployerOptions extends GoogleAuthOptions {
  * Class that provides the `deploy` method.
  */
 export class Deployer extends EventEmitter {
-  private options: DeployerOptions;
-  private auth: GoogleAuth;
-  private gcf?: cloudfunctions_v1.Cloudfunctions;
+  _options: DeployerOptions;
+  _auth: GoogleAuth;
+  _gcf?: cloudfunctions_v1.Cloudfunctions;
 
   constructor(options: DeployerOptions) {
     super();
-    this.validateOptions(options);
+    this._validateOptions(options);
     if (options.project) {
       options.projectId = options.project;
     }
-    this.options = options;
-    this.auth = new GoogleAuth(options);
+    this._options = options;
+    this._auth = new GoogleAuth(options);
   }
 
   /**
@@ -67,39 +67,40 @@ export class Deployer extends EventEmitter {
    */
   async deploy() {
     this.emit(ProgressEvent.STARTING);
-    const gcf = await this.getGCFClient();
-    const projectId = await this.auth.getProjectId();
-    const region = this.options.region || 'us-central1';
+    const gcf = await this._getGCFClient();
+    const projectId = await this._auth.getProjectId();
+    const region = this._options.region || 'us-central1';
     const parent = `projects/${projectId}/locations/${region}`;
-    const name = `${parent}/functions/${this.options.name}`;
+    const name = `${parent}/functions/${this._options.name}`;
     const fns = gcf.projects.locations.functions;
     const res = await fns.generateUploadUrl({parent});
     const sourceUploadUrl = res.data.uploadUrl!;
     this.emit(ProgressEvent.PACKAGING);
-    const zipPath = await this.pack();
+    const zipPath = await this._pack();
     this.emit(ProgressEvent.UPLOADING);
-    await this.upload(zipPath, sourceUploadUrl);
+    await this._upload(zipPath, sourceUploadUrl);
     this.emit(ProgressEvent.DEPLOYING);
-    const body = this.buildRequest(parent, sourceUploadUrl);
-    const exists = await this.exists(name);
+    const body = this._buildRequest(parent, sourceUploadUrl);
+    const exists = await this._exists(name);
     let result: AxiosResponse<cloudfunctions_v1.Schema$Operation>;
     if (exists) {
-      const updateMask = this.getUpdateMask();
+      const updateMask = this._getUpdateMask();
       result = await fns.patch({name, updateMask, requestBody: body});
     } else {
       result = await fns.create({location: parent, requestBody: body});
     }
     const operation = result.data;
-    await this.poll(operation.name!);
+    await this._poll(operation.name!);
     this.emit(ProgressEvent.COMPLETE);
   }
 
   /**
    * Given an operation, poll it until complete.
+   * @private
    * @param name Fully qualified name of the operation.
    */
-  private async poll(name: string) {
-    const gcf = await this.getGCFClient();
+  async _poll(name: string) {
+    const gcf = await this._getGCFClient();
     const res = await gcf.operations.get({name});
     const operation = res.data;
     if (operation.error) {
@@ -110,15 +111,16 @@ export class Deployer extends EventEmitter {
       return;
     }
     await new Promise(r => setTimeout(r, 5000));
-    await this.poll(name);
+    await this._poll(name);
   }
 
   /**
    * Get a list of fields that have been changed.
+   * @private
    */
-  private getUpdateMask() {
+  _getUpdateMask() {
     const fields = ['sourceUploadUrl'];
-    const opts = this.options;
+    const opts = this._options;
     if (opts.memory) fields.push('availableMemoryMb');
     if (opts.description) fields.push('description');
     if (opts.entryPoint) fields.push('entryPoint');
@@ -135,8 +137,10 @@ export class Deployer extends EventEmitter {
 
   /**
    * Validate the options passed in by the user.
+   * @private
+   * @param options
    */
-  private validateOptions(options: DeployerOptions) {
+  _validateOptions(options: DeployerOptions) {
     if (!options.name) {
       throw new Error('The `name` option is required.');
     }
@@ -150,32 +154,33 @@ export class Deployer extends EventEmitter {
 
   /**
    * Build a request schema that can be used to create or patch the function
+   * @private
    * @param parent Path to the cloud function resource container
    * @param sourceUploadUrl Url where the blob was pushed
    */
-  private buildRequest(parent: string, sourceUploadUrl: string) {
+  _buildRequest(parent: string, sourceUploadUrl: string) {
     const requestBody: cloudfunctions_v1.Schema$CloudFunction = {
-      name: `${parent}/functions/${this.options.name}`,
-      description: this.options.description,
+      name: `${parent}/functions/${this._options.name}`,
+      description: this._options.description,
       sourceUploadUrl,
-      entryPoint: this.options.entryPoint,
-      network: this.options.network,
-      runtime: this.options.runtime || 'nodejs8',
-      timeout: this.options.timeout,
-      availableMemoryMb: this.options.memory,
-      maxInstances: this.options.maxInstances
+      entryPoint: this._options.entryPoint,
+      network: this._options.network,
+      runtime: this._options.runtime || 'nodejs8',
+      timeout: this._options.timeout,
+      availableMemoryMb: this._options.memory,
+      maxInstances: this._options.maxInstances
     };
-    if (this.options.triggerTopic) {
+    if (this._options.triggerTopic) {
       requestBody.eventTrigger = {
-        eventType: this.options.triggerEvent ||
+        eventType: this._options.triggerEvent ||
             'providers/cloud.pubsub/eventTypes/topic.publish',
-        resource: this.options.triggerTopic
+        resource: this._options.triggerTopic
       };
-    } else if (this.options.triggerBucket) {
+    } else if (this._options.triggerBucket) {
       requestBody.eventTrigger = {
-        eventType: this.options.triggerEvent ||
+        eventType: this._options.triggerEvent ||
             'providers/cloud.storage/eventTypes/object.change',
-        resource: this.options.triggerBucket
+        resource: this._options.triggerBucket
       };
     } else {
       requestBody.httpsTrigger = {};
@@ -185,10 +190,11 @@ export class Deployer extends EventEmitter {
 
   /**
    * Check to see if a cloud function already exists.
+   * @private
    * @param name Fully qualified name of the function.
    */
-  private async exists(name: string) {
-    const gcf = await this.getGCFClient();
+  async _exists(name: string) {
+    const gcf = await this._getGCFClient();
     try {
       await gcf.projects.locations.functions.get({name});
       return true;
@@ -199,10 +205,11 @@ export class Deployer extends EventEmitter {
 
   /**
    * Upload a local file to GCS given a signed url
+   * @private
    * @param localPath Fully qualified path to the zip on disk.
    * @param remotePath Signed url used to put the file to
    */
-  private async upload(localPath: string, remotePath: string) {
+  async _upload(localPath: string, remotePath: string) {
     const stream = fs.createReadStream(localPath);
     await fetch(remotePath, {
       method: 'PUT',
@@ -216,8 +223,9 @@ export class Deployer extends EventEmitter {
 
   /**
    * Package all of the sources into a zip file.
+   * @private
    */
-  private async pack(): Promise<string> {
+  async _pack(): Promise<string> {
     return new Promise<string>(async (resolve, reject) => {
       const zipPath = path.join(os.tmpdir(), uuid.v4()) + '.zip';
       const output = fs.createWriteStream(zipPath);
@@ -225,7 +233,7 @@ export class Deployer extends EventEmitter {
       output.on('close', () => resolve(zipPath));
       archive.on('error', reject);
       archive.pipe(output);
-      const ignorePatterns = await this.getIgnoreRules();
+      const ignorePatterns = await this._getIgnoreRules();
       const files = await globby('**/**', {ignore: ignorePatterns});
       files.forEach(f => {
         const fullPath = path.join(process.cwd(), f);
@@ -238,8 +246,9 @@ export class Deployer extends EventEmitter {
   /**
    * Look in the CWD for a `.gcloudignore` file.  If one is present, parse it,
    * and return the ignore rules as an array of strings.
+   * @private
    */
-  private async getIgnoreRules() {
+  async _getIgnoreRules() {
     const ignoreFile = path.join(process.cwd(), '.gcloudignore');
     let ignoreRules = new Array<string>();
     try {
@@ -254,15 +263,16 @@ export class Deployer extends EventEmitter {
 
   /**
    * Provides an authenticated GCF api client.
+   * @private
    */
-  private async getGCFClient() {
-    if (!this.gcf) {
+  async _getGCFClient() {
+    if (!this._gcf) {
       const auth = await google.auth.getClient(
           {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
       google.options({auth});
-      this.gcf = google.cloudfunctions('v1');
+      this._gcf = google.cloudfunctions('v1');
     }
-    return this.gcf;
+    return this._gcf;
   }
 }
 
