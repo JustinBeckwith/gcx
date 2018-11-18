@@ -107,7 +107,7 @@ const cli = meow(
         name: {type: 'string'},
         description: {type: 'string'},
         entryPoint: {type: 'string'},
-        runtime: {type: 'string', default: 'nodejs8'},
+        runtime: {type: 'string'},
         timeout: {type: 'string'},
         network: {type: 'string'},
         retry: {type: 'boolean'},

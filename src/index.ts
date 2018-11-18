@@ -1,5 +1,5 @@
 import * as archiver from 'archiver';
-import {AxiosError, AxiosPromise, AxiosResponse} from 'axios';
+import {AxiosResponse} from 'axios';
 import * as fs from 'fs';
 import * as globby from 'globby';
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
@@ -13,7 +13,7 @@ import * as uuid from 'uuid';
 const readFile = util.promisify(fs.readFile);
 
 type Bag<T = {}> = {
-  [index: string]: T
+  [index: string]: T;
 };
 
 export interface DeployerOptions extends GoogleAuthOptions {
@@ -57,33 +57,61 @@ export class Deployer {
     const region = this.options.region || 'us-central1';
     const parent = `projects/${projectId}/locations/${region}`;
     const name = `${parent}/functions/${this.options.name}`;
-    const res =
-        await gcf.projects.locations.functions.generateUploadUrl({parent});
+    const fns = gcf.projects.locations.functions;
+    const res = await fns.generateUploadUrl({parent});
     const sourceUploadUrl = res.data.uploadUrl!;
-    console.log(sourceUploadUrl);
     const zipPath = await this.pack();
     await this.upload(zipPath, sourceUploadUrl);
     const body = this.buildRequest(parent, sourceUploadUrl);
-    console.log(body);
     const exists = await this.exists(name);
-    console.log(`exists?: ${exists}`);
-    let result: AxiosPromise<cloudfunctions_v1.Schema$Operation>;
+    let result: AxiosResponse<cloudfunctions_v1.Schema$Operation>;
     if (exists) {
-      result =
-          gcf.projects.locations.functions.patch({name, requestBody: body});
+      const updateMask = this.getUpdateMask();
+      result = await fns.patch({name, updateMask, requestBody: body});
     } else {
-      result = gcf.projects.locations.functions.create(
-          {location: parent, requestBody: body});
+      result = await fns.create({location: parent, requestBody: body});
     }
-    try {
-      const {data} = await result;
-      console.log(data);
-    } catch (e) {
-      const err = e as AxiosError;
-      if (err.response && err.response.data) {
-        console.log(JSON.stringify(err.response.data));
-      }
+    const operation = result.data;
+    await this.poll(operation.name!);
+  }
+
+  /**
+   * Given an operation, poll it until complete.
+   * @param name Fully qualified name of the operation.
+   */
+  private async poll(name: string) {
+    const gcf = await this.getGCFClient();
+    const res = await gcf.operations.get({name});
+    const operation = res.data;
+    if (operation.error) {
+      const message = JSON.stringify(operation.error);
+      throw new Error(message);
     }
+    if (operation.done) {
+      return;
+    }
+    await new Promise(r => setTimeout(r, 5000));
+    await this.poll(name);
+  }
+
+  /**
+   * Get a list of fields that have been changed.
+   */
+  private getUpdateMask() {
+    const fields = ['sourceUploadUrl'];
+    const opts = this.options;
+    if (opts.memory) fields.push('availableMemoryMb');
+    if (opts.description) fields.push('description');
+    if (opts.entryPoint) fields.push('entryPoint');
+    if (opts.maxInstances) fields.push('maxInstances');
+    if (opts.network) fields.push('network');
+    if (opts.runtime) fields.push('runtime');
+    if (opts.timeout) fields.push('timeout');
+    if (opts.triggerHTTP) fields.push('httpsTrigger');
+    if (opts.triggerBucket || opts.triggerTopic) {
+      fields.push('eventTrigger.eventType', 'eventTrigger.resource');
+    }
+    return fields.join();
   }
 
   /**
@@ -94,7 +122,7 @@ export class Deployer {
       throw new Error('The `name` option is required.');
     }
     const triggerCount = ['triggerHTTP', 'triggerBucket', 'triggerTopic']
-                             .filter(prop => !!(options as {} as Bag)[prop])
+                             .filter(prop => !!((options as {}) as Bag)[prop])
                              .length;
     if (triggerCount > 1) {
       throw new Error('At most 1 trigger may be defined.');
@@ -108,30 +136,30 @@ export class Deployer {
    */
   private buildRequest(parent: string, sourceUploadUrl: string) {
     const requestBody: cloudfunctions_v1.Schema$CloudFunction = {
-      name: `${parent}/${this.options.name}`,
+      name: `${parent}/functions/${this.options.name}`,
       description: this.options.description,
       sourceUploadUrl,
       entryPoint: this.options.entryPoint,
       network: this.options.network,
-      runtime: this.options.runtime,
+      runtime: this.options.runtime || 'nodejs8',
       timeout: this.options.timeout,
       availableMemoryMb: this.options.memory,
       maxInstances: this.options.maxInstances
     };
-    if (this.options.triggerHTTP) {
-      requestBody.httpsTrigger = {};
-    } else if (this.options.triggerTopic) {
+    if (this.options.triggerTopic) {
       requestBody.eventTrigger = {
         eventType: this.options.triggerEvent ||
             'providers/cloud.pubsub/eventTypes/topic.publish',
-        resource: this.options.triggerTopic,
+        resource: this.options.triggerTopic
       };
     } else if (this.options.triggerBucket) {
       requestBody.eventTrigger = {
         eventType: this.options.triggerEvent ||
             'providers/cloud.storage/eventTypes/object.change',
-        resource: this.options.triggerBucket,
+        resource: this.options.triggerBucket
       };
+    } else {
+      requestBody.httpsTrigger = {};
     }
     return requestBody;
   }
@@ -173,7 +201,6 @@ export class Deployer {
   private async pack(): Promise<string> {
     return new Promise<string>(async (resolve, reject) => {
       const zipPath = path.join(os.tmpdir(), uuid.v4()) + '.zip';
-      console.log(`dumping archive to ${zipPath}`);
       const output = fs.createWriteStream(zipPath);
       const archive = archiver('zip');
       output.on('close', () => resolve(zipPath));
