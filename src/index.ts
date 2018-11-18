@@ -246,3 +246,8 @@ export class Deployer {
     return this.gcf;
   }
 }
+
+export async function deploy(options: DeployerOptions) {
+  const deployer = new Deployer(options);
+  return deployer.deploy();
+}

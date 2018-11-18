@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as meow from 'meow';
-import {Deployer, DeployerOptions} from './';
+import {deploy, DeployerOptions} from './';
 import * as updateNotifier from 'update-notifier';
 
 const pkg = require('../../package.json');
@@ -130,9 +130,7 @@ async function main() {
   }
   switch (cli.input[0]) {
     case 'deploy':
-      const deployer = new Deployer(cli.flags as DeployerOptions);
-      await deployer.deploy();
-      console.log(cli.flags);
+      await deploy(cli.flags as DeployerOptions);
       break;
     default:
       cli.showHelp();
