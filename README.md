@@ -22,20 +22,20 @@ Then from your `package.json`, it's super easy to add a deploy script:
 
 ```json
 "scripts": {
-  "deploy": "gcx deploy"
+  "deploy": "gcx deploy my-awesome-function"
 }
 ```
 
-### Flags
+### Arguments
 
-##### --name
+##### FUNCTION_NAME
 ID of the function or fully qualified identifier for the function. This positional must be specified if any of the other arguments in this group are specified.
 
 ##### --description
- User-provided description of a function.
+User-provided description of a function.
 
 ##### --region
-  The cloud region for the function.  Defaults to `us-central1`.
+The cloud region for the function.  Defaults to `us-central1`.
 
 ##### --runtime
 The runtime in which to run the function. Defaults to nodejs8.
@@ -114,10 +114,10 @@ for whitelisted users.
 
 ```sh
 # Deploy a new function
-$ gcx deploy --name myhook --runtime nodejs10 --trigger-http
+$ gcx deploy myhook --runtime nodejs10 --trigger-http
 
 # Update the same function with new source code
-$ gcx deploy --name myhook
+$ gcx deploy myhook
 ```
 
 ## API

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as meow from 'meow';
-import {deploy, DeployerOptions} from './';
+import {Deployer, DeployerOptions} from './';
 import * as updateNotifier from 'update-notifier';
 
 const pkg = require('../../package.json');
@@ -9,13 +9,16 @@ updateNotifier({pkg}).notify();
 const cli = meow(
     `
     Usage
-      $ gcx deploy
+      $ gcx deploy FUNCTION_NAME
+
+    Positional arguments
+
+      FUNCTION_NAME
+        ID of the function or fully qualified identifier for the function.
+        This positional must be specified if any of the other arguments in
+        this group are specified.
 
     Options
-      --name=NAME
-          ID of the function or fully qualified identifier for the function.
-          This positional must be specified if any of the other arguments in
-          this group are specified.
 
       --description=DESCRIPTION
           User-provided description of a function.
@@ -104,7 +107,6 @@ const cli = meow(
 `,
     {
       flags: {
-        name: {type: 'string'},
         description: {type: 'string'},
         entryPoint: {type: 'string'},
         runtime: {type: 'string'},
@@ -113,6 +115,7 @@ const cli = meow(
         retry: {type: 'boolean'},
         memory: {type: 'string'},
         project: {type: 'string'},
+        projectId: {type: 'string'},
         triggerBucket: {type: 'string'},
         triggerHttp: {type: 'boolean'},
         triggerTopic: {type: 'string'},
@@ -124,13 +127,16 @@ const cli = meow(
     });
 
 async function main() {
-  if (cli.input.length !== 1) {
+  if (cli.input.length !== 2) {
     cli.showHelp();
     return;
   }
   switch (cli.input[0]) {
     case 'deploy':
-      await deploy(cli.flags as DeployerOptions);
+      const opts = cli.flags as DeployerOptions;
+      opts.name = cli.input[1];
+      const deployinator = new Deployer(opts);
+      await deployinator.deploy();
       break;
     default:
       cli.showHelp();
