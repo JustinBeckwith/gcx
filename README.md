@@ -7,14 +7,14 @@
 Nascent, barely tested, and like 1/2 done.  I 💜 pull requests. Please don't use this in production yet.
 
 ## Installation
-```
+```sh
 $ npm install gcx
 ```
 
 ## Command Line
 `gcx` is a convenient way to deploy Google Cloud Functions.  To use as a command line application:
 
-```
+```sh
 $ npm install --save-dev gcx
 ```
 
@@ -28,15 +28,13 @@ Then from your `package.json`, it's super easy to add a deploy script:
 
 ### Flags
 
-#### --name
+- #### --name
 ID of the function or fully qualified identifier for the function.
 This positional must be specified if any of the other arguments in
 this group are specified.
-
-#### --description
+- #### --description
     User-provided description of a function.
-
-#### --region
+- #### --region
 The cloud region for the function.  Defaults to `us-central1`.
 
 #### --runtime
@@ -114,17 +112,15 @@ for whitelisted users.
 
 ### Examples
 
-```
+```sh
 # Deploy a new function
 $ gcx deploy --name myhook --runtime nodejs10 --trigger-http
 
 # Update the same function with new source code
 $ gcx deploy --name myhook
-
 ```
 
 ## API
-
 You can also use this as a regular old API.
 
 ```js
@@ -138,6 +134,36 @@ async function main() {
   });
 }
 main().catch(console.error);
+```
+
+## Authentication
+This library uses [google-auth-library](https://www.npmjs.com/package/google-auth-library) under the hood to provide authentication.  That means you can authenticate a few ways.
+
+#### Using a service account
+One of the reasons this library exists is to provide a nodejs native deployment in environments where you don't want to have the Cloud SDK installed.
+
+For this method, you'll need to [create a service account](https://cloud.google.com/docs/authentication/getting-started), and download a key.
+
+1. In the GCP Console, go to the [Create service account key](https://console.cloud.google.com/apis/credentials/serviceaccountkey?_ga=2.44822625.-475179053.1491320180) page.
+1. From the Service account drop-down list, select New service account.
+1. In the Service account name field, enter a name.
+1. From the Role drop-down list, select Project > Owner.
+1. Click Create. A JSON file that contains your key downloads to your computer.
+
+```sh
+$ export GCLOUD_PROJECT="my-rad-project-id"
+$ export GOOGLE_APPLICATION_CREDENTIALS="./keys.json"
+$ gcx deploy
+```
+
+#### Using application default credentials
+If you plan on only using this from your machine, and you have the Google Cloud SDK installed, you can just use application default credentials like this:
+
+```sh
+$ gcloud auth login
+$ gcloud auth application-default login
+$ gcloud config set project 'YOUR-AWESOME-PROJECT'
+$ gcx deploy
 ```
 
 # License
