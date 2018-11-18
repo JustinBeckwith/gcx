@@ -140,34 +140,31 @@ async function main() {
       const spinny = ora('Initializing deployment...').start();
       const deployinator = new Deployer(opts);
       deployinator
-        .on(ProgressEvent.PACKAGING, () => {
-          spinny.stopAndPersist({
-            symbol: '🤖',
-            text: 'Deployment initialized.'
+          .on(ProgressEvent.PACKAGING,
+              () => {
+                spinny.stopAndPersist(
+                    {symbol: '🤖', text: 'Deployment initialized.'});
+                spinny.start('Packaging sources...');
+              })
+          .on(ProgressEvent.UPLOADING,
+              () => {
+                spinny.stopAndPersist(
+                    {symbol: '📦', text: 'Source code packaged.'});
+                spinny.start('Uploading source...');
+              })
+          .on(ProgressEvent.DEPLOYING,
+              () => {
+                spinny.stopAndPersist(
+                    {symbol: '🛸', text: 'Source uploaded to cloud.'});
+                spinny.start('Deploying function...');
+              })
+          .on(ProgressEvent.COMPLETE, () => {
+            const seconds = (Date.now() - start) / 1000;
+            spinny.stopAndPersist({
+              symbol: '🚀',
+              text: `Function deployed in ${seconds} seconds.`
+            });
           });
-          spinny.start('Packaging sources...');
-        })
-        .on(ProgressEvent.UPLOADING, () => {
-          spinny.stopAndPersist({
-            symbol: '📦',
-            text: 'Source code packaged.'
-          });
-          spinny.start('Uploading source...');
-        })
-        .on(ProgressEvent.DEPLOYING, () => {
-          spinny.stopAndPersist({
-            symbol: '🛸',
-            text: 'Source uploaded to cloud.'
-          });
-          spinny.start('Deploying function...');
-        })
-        .on(ProgressEvent.COMPLETE, () => {
-          const seconds = (Date.now() - start)/1000;
-          spinny.stopAndPersist({
-            symbol: '🚀',
-            text: `Function deployed in ${seconds} seconds.`
-          });
-        });
       await deployinator.deploy();
       break;
     default:
