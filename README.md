@@ -1,7 +1,10 @@
 # gcx
 > An API and CLI for deploying Google Cloud Functions in Node.js.
 
+[![NPM Version](https://img.shields.io/npm/v/gcx.svg)](https://npmjs.org/package/gcx)
 [![Build Status](https://travis-ci.com/JustinBeckwith/gcx.svg?branch=master)](https://travis-ci.com/JustinBeckwith/gcx)
+[![codecov](https://codecov.io/gh/JustinBeckwith/gcx/branch/master/graph/badge.svg)](https://codecov.io/gh/JustinBeckwith/gcx)
+[![style badge](https://img.shields.io/badge/code%20style-Google%20%E2%98%82%EF%B8%8F-blue.svg)](https://www.npmjs.com/package/gts)
 
 ## Project status
 Nascent, barely tested, and like 1/2 done.  I 💜 pull requests. Please don't use this in production yet.
