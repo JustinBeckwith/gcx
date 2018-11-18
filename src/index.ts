@@ -1,28 +1,37 @@
-import {google, cloudfunctions_v1} from 'googleapis';
-import { GoogleAuthOptions, GoogleAuth } from 'google-auth-library';
 import * as archiver from 'archiver';
+import {AxiosError, AxiosPromise, AxiosResponse} from 'axios';
 import * as fs from 'fs';
+import * as globby from 'globby';
+import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
+import {cloudfunctions_v1, google} from 'googleapis';
+import * as fetch from 'node-fetch';
+import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
-import * as globby from 'globby';
-import * as os from 'os';
 import * as uuid from 'uuid';
-import * as fetch from 'node-fetch';
 
 const readFile = util.promisify(fs.readFile);
 
+type Bag<T = {}> = {
+  [index: string]: T
+};
+
 export interface DeployerOptions extends GoogleAuthOptions {
-  name?: string;
+  name: string;
+  description?: string;
   region?: string;
   runtime?: string;
   retry?: boolean;
   memory?: number;
-  stageBucket?: string;
-  triggerBucket?: string;
+  network?: string;
+  maxInstances?: number;
   timeout?: string;
-  triggerHttp?: boolean;
+  triggerHTTP?: boolean;
   triggerTopic?: string;
-  entrypoint?: string;
+  triggerBucket?: string;
+  triggerResource?: string;
+  triggerEvent?: string;
+  entryPoint?: string;
 }
 
 /**
@@ -33,8 +42,9 @@ export class Deployer {
   private auth: GoogleAuth;
   private gcf?: cloudfunctions_v1.Cloudfunctions;
 
-  constructor(options?: DeployerOptions) {
-    this.options = options || {};
+  constructor(options: DeployerOptions) {
+    this.validateOptions(options);
+    this.options = options;
     this.auth = new GoogleAuth(options);
   }
 
@@ -46,23 +56,98 @@ export class Deployer {
     const projectId = await this.auth.getProjectId();
     const region = this.options.region || 'us-central1';
     const parent = `projects/${projectId}/locations/${region}`;
-    const res = await gcf.projects.locations.functions.generateUploadUrl({ parent });
+    const name = `${parent}/functions/${this.options.name}`;
+    const res =
+        await gcf.projects.locations.functions.generateUploadUrl({parent});
     const sourceUploadUrl = res.data.uploadUrl!;
     console.log(sourceUploadUrl);
     const zipPath = await this.pack();
     await this.upload(zipPath, sourceUploadUrl);
+    const body = this.buildRequest(parent, sourceUploadUrl);
+    console.log(body);
+    const exists = await this.exists(name);
+    console.log(`exists?: ${exists}`);
+    let result: AxiosPromise<cloudfunctions_v1.Schema$Operation>;
+    if (exists) {
+      result =
+          gcf.projects.locations.functions.patch({name, requestBody: body});
+    } else {
+      result = gcf.projects.locations.functions.create(
+          {location: parent, requestBody: body});
+    }
+    try {
+      const {data} = await result;
+      console.log(data);
+    } catch (e) {
+      const err = e as AxiosError;
+      if (err.response && err.response.data) {
+        console.log(JSON.stringify(err.response.data));
+      }
+    }
+  }
 
-    // const createRes = await gcf.projects.locations.functions.create({
-    //   location: parent,
-    //   requestBody: {
-    //     name: `${parent}/${this.options.name}`,
-    //     sourceUploadUrl,
-    //     entryPoint: this.options.entrypoint,
-    //     runtime: this.options.runtime,
-    //     timeout: this.options.timeout,
-    //     availableMemoryMb: this.options.memory,
-    //   }
-    // });
+  /**
+   * Validate the options passed in by the user.
+   */
+  private validateOptions(options: DeployerOptions) {
+    if (!options.name) {
+      throw new Error('The `name` option is required.');
+    }
+    const triggerCount = ['triggerHTTP', 'triggerBucket', 'triggerTopic']
+                             .filter(prop => !!(options as {} as Bag)[prop])
+                             .length;
+    if (triggerCount > 1) {
+      throw new Error('At most 1 trigger may be defined.');
+    }
+  }
+
+  /**
+   * Build a request schema that can be used to create or patch the function
+   * @param parent Path to the cloud function resource container
+   * @param sourceUploadUrl Url where the blob was pushed
+   */
+  private buildRequest(parent: string, sourceUploadUrl: string) {
+    const requestBody: cloudfunctions_v1.Schema$CloudFunction = {
+      name: `${parent}/${this.options.name}`,
+      description: this.options.description,
+      sourceUploadUrl,
+      entryPoint: this.options.entryPoint,
+      network: this.options.network,
+      runtime: this.options.runtime,
+      timeout: this.options.timeout,
+      availableMemoryMb: this.options.memory,
+      maxInstances: this.options.maxInstances
+    };
+    if (this.options.triggerHTTP) {
+      requestBody.httpsTrigger = {};
+    } else if (this.options.triggerTopic) {
+      requestBody.eventTrigger = {
+        eventType: this.options.triggerEvent ||
+            'providers/cloud.pubsub/eventTypes/topic.publish',
+        resource: this.options.triggerTopic,
+      };
+    } else if (this.options.triggerBucket) {
+      requestBody.eventTrigger = {
+        eventType: this.options.triggerEvent ||
+            'providers/cloud.storage/eventTypes/object.change',
+        resource: this.options.triggerBucket,
+      };
+    }
+    return requestBody;
+  }
+
+  /**
+   * Check to see if a cloud function already exists.
+   * @param name Fully qualified name of the function.
+   */
+  private async exists(name: string) {
+    const gcf = await this.getGCFClient();
+    try {
+      await gcf.projects.locations.functions.get({name});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
@@ -95,7 +180,7 @@ export class Deployer {
       archive.on('error', reject);
       archive.pipe(output);
       const ignorePatterns = await this.getIgnoreRules();
-      const files = await globby('**/**', { ignore: ignorePatterns });
+      const files = await globby('**/**', {ignore: ignorePatterns});
       files.forEach(f => {
         const fullPath = path.join(process.cwd(), f);
         archive.append(fs.createReadStream(fullPath), {name: f});
@@ -113,11 +198,11 @@ export class Deployer {
     let ignoreRules = new Array<string>();
     try {
       const contents = await readFile(ignoreFile, 'utf8');
-      ignoreRules = contents.split('\n')
-        .filter(line => {
-          return !line.startsWith('#') && line.trim() !== '';
-        });
-    } catch (e) {}
+      ignoreRules = contents.split('\n').filter(line => {
+        return !line.startsWith('#') && line.trim() !== '';
+      });
+    } catch (e) {
+    }
     return ignoreRules;
   }
 
@@ -126,11 +211,8 @@ export class Deployer {
    */
   private async getGCFClient() {
     if (!this.gcf) {
-      const auth = await google.auth.getClient({
-        scopes: [
-          "https://www.googleapis.com/auth/cloud-platform"
-        ]
-      });
+      const auth = await google.auth.getClient(
+          {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
       google.options({auth});
       this.gcf = google.cloudfunctions('v1');
     }
