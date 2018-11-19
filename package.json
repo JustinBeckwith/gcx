@@ -8,7 +8,8 @@
   "main": "./build/src/index.js",
   "types": "./build/src/index.d.ts",
   "files": [
-    "build/src"
+    "build/src",
+    "src/.gcloudignore"
   ],
   "scripts": {
     "test": "nyc mocha build/test --require source-map-support/register --timeout 60000",

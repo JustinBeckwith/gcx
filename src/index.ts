@@ -12,6 +12,7 @@ import * as util from 'util';
 import * as uuid from 'uuid';
 
 const readFile = util.promisify(fs.readFile);
+const stat = util.promisify(fs.stat);
 
 type Bag<T = {}> = {
   [index: string]: T;

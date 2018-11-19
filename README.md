@@ -29,10 +29,12 @@ Then from your `package.json`, it's super easy to add a deploy script:
 }
 ```
 
-### Arguments
+### Positional arguments
 
 ##### FUNCTION_NAME
 ID of the function or fully qualified identifier for the function. This positional must be specified if any of the other arguments in this group are specified.
+
+### Flags
 
 ##### --description
 User-provided description of a function.
@@ -59,6 +61,10 @@ memory limit unless you specify this flag.
 
 ##### --project
 Project Id of the GCP project.
+
+##### --target-dir
+The directory that contains the sources to be deployed.  Defaults to the
+current working directory.
 
 ##### --trigger-bucket
 Google Cloud Storage bucket name. Every change in files in this

@@ -3,6 +3,9 @@ import * as meow from 'meow';
 import {Deployer, DeployerOptions, ProgressEvent} from './';
 import * as updateNotifier from 'update-notifier';
 import * as ora from 'ora';
+import * as util from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const pkg = require('../../package.json');
 updateNotifier({pkg}).notify();
@@ -19,7 +22,7 @@ const cli = meow(
         This positional must be specified if any of the other arguments in
         this group are specified.
 
-    Options
+    Flags
 
       --description=DESCRIPTION
           User-provided description of a function.
@@ -32,6 +35,10 @@ const cli = meow(
             ◆ nodejs6
             ◆ nodejs8
             ◆ python37
+
+      --target-dir
+          The directory that contains the sources to be deployed.  Defaults
+          to the current working directory.
 
       --retry
           If specified, then the function will be retried in case of a failure.
@@ -50,18 +57,18 @@ const cli = meow(
           Google Cloud Storage bucket name. Every change in files in this
           bucket will trigger function execution.
 
-       --trigger-http
+      --trigger-http
           Function will be assigned an endpoint, which you can view by using
           the describe command. Any HTTP request (of a supported type) to the
           endpoint will trigger function execution. Supported HTTP request
           types are: POST, PUT, GET, DELETE, and OPTIONS.
 
-       --trigger-topic=TRIGGER_TOPIC
+      --trigger-topic=TRIGGER_TOPIC
           Name of Pub/Sub topic. Every message published in this topic will
           trigger function execution with message contents passed as input
           data.
 
-       --trigger-event=EVENT_TYPE
+      --trigger-event=EVENT_TYPE
           Specifies which action should trigger the function. For a list of
           acceptable values, call functions event-types list.
 
@@ -122,6 +129,7 @@ const cli = meow(
         triggerTopic: {type: 'string'},
         triggerResource: {type: 'string'},
         triggerEvent: {type: 'string'},
+        targetDir: {type: 'string'},
         region: {type: 'string'},
         maxInstances: {type: 'string'}
       }
@@ -137,6 +145,11 @@ async function main() {
       const start = Date.now();
       const opts = cli.flags as DeployerOptions;
       opts.name = cli.input[1];
+      const targetDir = opts.targetDir || process.cwd();
+      const hasIgnore = await hasIgnoreFile(targetDir);
+      if (!hasIgnore) {
+        await generateIgnoreFile(targetDir);
+      }
       const spinny = ora('Initializing deployment...').start();
       const deployinator = new Deployer(opts);
       deployinator
@@ -169,6 +182,34 @@ async function main() {
       break;
     default:
       cli.showHelp();
+  }
+}
+
+async function generateIgnoreFile(targetDir: string) {
+  console.log(`
+    🤖 I generated a '.gcloudignore' file in the target directory.
+       This file contains a list of glob patterns that should be ingored
+       in your deployment. It works just like a .gitignore file 💜
+  `);
+  await new Promise((resolve, reject) => {
+    fs.createReadStream(path.join(__dirname, '../../src/.gcloudignore'))
+      .pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
+      .on('error', reject)
+      .on('close', resolve);
+  });
+}
+
+/**
+ * Checks to see if a given directory has a `.gcloudignore` file.
+ * @param targetDir The directory with the sources to deploy.
+ */
+async function hasIgnoreFile(targetDir: string) {
+  const ignoreFile = path.join(targetDir, '.gcloudignore');
+  try {
+    await util.promisify(fs.stat)(ignoreFile);
+    return true;
+  } catch (e) {
+    return false;
   }
 }
 
