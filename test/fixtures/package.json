@@ -1,0 +1,6 @@
+{
+  "name": "gcx-test-fixtures",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT"
+}

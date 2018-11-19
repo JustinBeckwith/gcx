@@ -42,6 +42,7 @@ export interface DeployerOptions extends GoogleAuthOptions {
   triggerEvent?: string;
   entryPoint?: string;
   project?: string;
+  targetDir?: string;
 }
 
 /**
@@ -59,6 +60,9 @@ export class Deployer extends EventEmitter {
       options.projectId = options.project;
     }
     this._options = options;
+    if (!options.targetDir) {
+      this._options.targetDir = process.cwd();
+    }
     this._auth = new GoogleAuth(options);
   }
 
@@ -234,9 +238,10 @@ export class Deployer extends EventEmitter {
       archive.on('error', reject);
       archive.pipe(output);
       const ignorePatterns = await this._getIgnoreRules();
-      const files = await globby('**/**', {ignore: ignorePatterns});
+      const files = await globby(
+          '**/**', {ignore: ignorePatterns, cwd: this._options.targetDir});
       files.forEach(f => {
-        const fullPath = path.join(process.cwd(), f);
+        const fullPath = path.join(this._options.targetDir!, f);
         archive.append(fs.createReadStream(fullPath), {name: f});
       });
       archive.finalize();
@@ -249,7 +254,7 @@ export class Deployer extends EventEmitter {
    * @private
    */
   async _getIgnoreRules() {
-    const ignoreFile = path.join(process.cwd(), '.gcloudignore');
+    const ignoreFile = path.join(this._options.targetDir!, '.gcloudignore');
     let ignoreRules = new Array<string>();
     try {
       const contents = await readFile(ignoreFile, 'utf8');
