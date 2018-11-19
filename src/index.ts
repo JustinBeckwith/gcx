@@ -5,14 +5,13 @@ import * as fs from 'fs';
 import * as globby from 'globby';
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
 import {cloudfunctions_v1, google} from 'googleapis';
-import * as fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
 import * as uuid from 'uuid';
 
 const readFile = util.promisify(fs.readFile);
-const stat = util.promisify(fs.stat);
 
 type Bag<T = {}> = {
   [index: string]: T;
