@@ -144,7 +144,7 @@ export class Deployer extends EventEmitter {
    * @private
    * @param options
    */
-  _validateOptions(options: DeployerOptions) {
+  private _validateOptions(options: DeployerOptions) {
     if (!options.name) {
       throw new Error('The `name` option is required.');
     }

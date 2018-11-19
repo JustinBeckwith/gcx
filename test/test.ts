@@ -72,26 +72,80 @@ describe('pack & upload', () => {
 
   it('should PUT the file to Google Cloud Storage', async () => {
     const deployer = new gcx.Deployer({name, targetDir});
-    const url = 'https://fake.local';
-    const scope = nock(url, {
-                    reqheaders: {
-                      'Content-Type': 'application/zip',
-                      'x-goog-content-length-range': '0,104857600'
-                    }
-                  })
-                      .put('/')
-                      .reply(200);
+    const scope = mockUpload();
     await deployer._upload(zipFile, 'https://fake.local');
     scope.done();
   });
 });
 
 describe('cloud functions api', () => {
-  it.skip('should check to see if the function exists', async () => {
+  it('should check to see if the function exists', async () => {
+    const scopes = [mockToken(), mockExists()];
     const deployer = new gcx.Deployer({name});
     const fullName =
         `projects/fakeProjectId/locations/fakeRegion/functions/${name}`;
     const exists = await deployer._exists(fullName);
     assert.strictEqual(exists, true);
+    scopes.forEach(s => s.done());
   });
 });
+
+describe('end to end', () => {
+  it('should work together end to end', async () => {
+    const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
+    const deployer = new gcx.Deployer({name, targetDir});
+    await deployer.deploy();
+    scopes.forEach(s => s.done());
+  });
+});
+
+function mockToken() {
+  return nock('https://oauth2.googleapis.com').post('/token').reply(200, {
+    access_token: 'wumpyflappy'
+  });
+}
+
+function mockUpload() {
+  return nock('https://fake.local', {
+           reqheaders: {
+             'Content-Type': 'application/zip',
+             'x-goog-content-length-range': '0,104857600'
+           }
+         })
+      .put('/')
+      .reply(200);
+}
+
+function mockUploadUrl() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .post(
+          '/v1/projects/el-gato/locations/us-central1/functions:generateUploadUrl')
+      .reply(200, {uploadUrl: 'https://fake.local'});
+}
+
+function mockDeploy() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .post('/v1/projects/el-gato/locations/us-central1/functions')
+      .reply(200, {name: 'not-a-real-operation'});
+}
+
+function mockPoll() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .get('/v1/not-a-real-operation')
+      .reply(200, {done: true});
+}
+
+function mockPollRetry() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .get('/v1/not-a-real-operation')
+      .reply(200, {done: false})
+      .get('/v1/not-a-real-operation')
+      .reply(200, {done: true});
+}
+
+function mockExists() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .get(
+          '/v1/projects/fakeProjectId/locations/fakeRegion/functions/%F0%9F%A6%84')
+      .reply(200);
+}

@@ -11,7 +11,7 @@
     "build/src"
   ],
   "scripts": {
-    "test": "nyc mocha build/test --require source-map-support/register",
+    "test": "nyc mocha build/test --require source-map-support/register --timeout 60000",
     "check": "gts check",
     "compile": "tsc -p .",
     "fix": "gts fix",
