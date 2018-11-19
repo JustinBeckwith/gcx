@@ -193,9 +193,9 @@ async function generateIgnoreFile(targetDir: string) {
   `);
   await new Promise((resolve, reject) => {
     fs.createReadStream(path.join(__dirname, '../../src/.gcloudignore'))
-      .pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
-      .on('error', reject)
-      .on('close', resolve);
+        .pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
+        .on('error', reject)
+        .on('close', resolve);
   });
 }
 
