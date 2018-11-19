@@ -85,3 +85,13 @@ describe('pack & upload', () => {
     scope.done();
   });
 });
+
+describe('cloud functions api', () => {
+  it.skip('should check to see if the function exists', async () => {
+    const deployer = new gcx.Deployer({name});
+    const fullName =
+        `projects/fakeProjectId/locations/fakeRegion/functions/${name}`;
+    const exists = await deployer._exists(fullName);
+    assert.strictEqual(exists, true);
+  });
+});
