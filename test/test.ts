@@ -80,10 +80,9 @@ describe('pack & upload', () => {
 
 describe('cloud functions api', () => {
   it('should check to see if the function exists', async () => {
-    const scopes = [mockToken(), mockExists()];
+    const scopes = [mockGCE(), mockToken(), mockExists()];
     const deployer = new gcx.Deployer({name});
-    const fullName =
-        `projects/fakeProjectId/locations/fakeRegion/functions/${name}`;
+    const fullName = `projects/el-gato/locations/us-central1/functions/${name}`;
     const exists = await deployer._exists(fullName);
     assert.strictEqual(exists, true);
     scopes.forEach(s => s.done());
@@ -93,16 +92,23 @@ describe('cloud functions api', () => {
 describe('end to end', () => {
   it('should work together end to end', async () => {
     const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
-    const deployer = new gcx.Deployer({name, targetDir});
+    const projectId = 'el-gato';
+    const deployer = new gcx.Deployer({name, targetDir, projectId});
     await deployer.deploy();
     scopes.forEach(s => s.done());
   });
 });
 
+function mockGCE() {
+  return nock('http://metadata.google.internal')
+      .get('/computeMetadata/v1/instance')
+      .reply(200, {}, {'Metadata-Flavor': 'Google'});
+}
+
 function mockToken() {
-  return nock('https://oauth2.googleapis.com').post('/token').reply(200, {
-    access_token: 'wumpyflappy'
-  });
+  return nock('http://metadata.google.internal')
+      .get('/computeMetadata/v1/instance/service-accounts/default/token')
+      .reply(200, {access_token: '12345'}, {'Metadata-Flavor': 'Google'});
 }
 
 function mockUpload() {
@@ -135,17 +141,8 @@ function mockPoll() {
       .reply(200, {done: true});
 }
 
-function mockPollRetry() {
-  return nock('https://cloudfunctions.googleapis.com')
-      .get('/v1/not-a-real-operation')
-      .reply(200, {done: false})
-      .get('/v1/not-a-real-operation')
-      .reply(200, {done: true});
-}
-
 function mockExists() {
   return nock('https://cloudfunctions.googleapis.com')
-      .get(
-          '/v1/projects/fakeProjectId/locations/fakeRegion/functions/%F0%9F%A6%84')
+      .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84')
       .reply(200);
 }
