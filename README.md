@@ -6,9 +6,6 @@
 [![codecov](https://codecov.io/gh/JustinBeckwith/gcx/branch/master/graph/badge.svg)](https://codecov.io/gh/JustinBeckwith/gcx)
 [![style badge](https://img.shields.io/badge/code%20style-Google%20%E2%98%82%EF%B8%8F-blue.svg)](https://www.npmjs.com/package/gts)
 
-## Project status
-Nascent, barely tested, and like 1/2 done.  I 💜 pull requests. Please don't use this in production yet.
-
 ## Installation
 ```sh
 $ npm install gcx
@@ -162,7 +159,7 @@ For this method, you'll need to [create a service account](https://cloud.google.
 ```sh
 $ export GCLOUD_PROJECT="my-rad-project-id"
 $ export GOOGLE_APPLICATION_CREDENTIALS="./keys.json"
-$ gcx deploy
+$ gcx deploy YOUR_FUNCTION_NAME
 ```
 
 #### Using application default credentials
@@ -172,7 +169,7 @@ If you plan on only using this from your machine, and you have the Google Cloud 
 $ gcloud auth login
 $ gcloud auth application-default login
 $ gcloud config set project 'YOUR-AWESOME-PROJECT'
-$ gcx deploy
+$ gcx deploy YOUR_FUNCTION_NAME
 ```
 
 ## License
