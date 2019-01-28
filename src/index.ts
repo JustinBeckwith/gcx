@@ -1,7 +1,7 @@
 import * as archiver from 'archiver';
-import {AxiosResponse} from 'axios';
 import {EventEmitter} from 'events';
 import * as fs from 'fs';
+import {GaxiosResponse} from 'gaxios';
 import * as globby from 'globby';
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
 import {cloudfunctions_v1, google} from 'googleapis';
@@ -86,7 +86,7 @@ export class Deployer extends EventEmitter {
     this.emit(ProgressEvent.DEPLOYING);
     const body = this._buildRequest(parent, sourceUploadUrl);
     const exists = await this._exists(name);
-    let result: AxiosResponse<cloudfunctions_v1.Schema$Operation>;
+    let result: GaxiosResponse<cloudfunctions_v1.Schema$Operation>;
     if (exists) {
       const updateMask = this._getUpdateMask();
       result = await fns.patch({name, updateMask, requestBody: body});
