@@ -13,14 +13,14 @@
   ],
   "scripts": {
     "test": "nyc mocha build/test --require source-map-support/register --timeout 60000",
-    "check": "gts check",
+    "lint": "gts check",
     "compile": "tsc -p .",
     "fix": "gts fix",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
-    "posttest": "npm run check",
     "watch": "tsc -p . --watch",
-    "coverage": "nyc report --reporter=json && codecov -f coverage/*.json"
+    "codecov": "nyc report --reporter=json && codecov -f coverage/*.json",
+    "commitlint": "git log -1 --pretty=%B | commitlint"
   },
   "keywords": [
     "google",
@@ -42,6 +42,8 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^7.4.0",
+    "@commitlint/config-conventional": "^7.3.1",
     "@types/archiver": "^2.1.2",
     "@types/globby": "^8.0.0",
     "@types/meow": "^5.0.0",
@@ -59,6 +61,7 @@
     "nock": "^10.0.2",
     "node-stream-zip": "^1.7.0",
     "nyc": "^13.1.0",
+    "semantic-release": "^15.13.3",
     "source-map-support": "^0.5.9",
     "typescript": "~3.2.0"
   },

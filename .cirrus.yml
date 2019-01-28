@@ -1,0 +1,42 @@
+container:
+  image: node:10
+
+lint_task:
+  install_script: npm install
+  test_script: npm run lint
+
+test_task:
+  container:
+    matrix:
+      image: node:11
+      image: node:10
+      image: node:8
+  install_script: npm install
+  test_script: npm test
+
+commit_lint_task:
+  script:
+    - npm install
+    - npm run commitlint
+
+coverage_task:
+  env:
+    CODECOV_TOKEN: ENCRYPTED[bfec6dd3d1be6709892c9b32634c435b1fe135f475190a702c7f809b0e2476f9a61c1f27dbaedaaca7dcdd5687649b7b]
+  script:
+    - npm install
+    - npm test
+    - npm run codecov
+
+publish_task:
+  only_if: $CIRRUS_BRANCH == 'master'
+  depends_on:
+    - test_task
+    - lint_task
+    - commit_lint_task
+  environment:
+    GITHUB_TOKEN: ENCRYPTED[1bbc6f242e440f8b230be98dede45c83acdb44d67cb92da704d36778342cf03250860663fd33b74294d457e11ac1eacb]
+    NPM_TOKEN: ENCRYPTED[def622d020125e68de145ab1524d81be9e848fb62ef06319f5a419fc1b968cf213e63e28e6827169f4a97a5807a7df0c]
+  script:
+    - npm install
+    - npm run compile
+    - npx semantic-release
