@@ -1,10 +1,9 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as gcx from '../src';
 import * as nock from 'nock';
 import * as path from 'path';
 import * as util from 'util';
-
-import * as gcx from '../src';
 
 // tslint:disable-next-line variable-name
 const Zip = require('node-stream-zip');
@@ -90,12 +89,18 @@ describe('cloud functions api', () => {
 });
 
 describe('end to end', () => {
-  it('should work together end to end', async () => {
+  it('should deploy end to end', async () => {
     const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
     const projectId = 'el-gato';
     const deployer = new gcx.Deployer({name, targetDir, projectId});
     await deployer.deploy();
     scopes.forEach(s => s.done());
+  });
+
+  it('should call end to end', async () => {
+    mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll();
+    const c = new gcx.Caller();
+    c.call(name);
   });
 });
 

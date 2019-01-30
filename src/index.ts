@@ -1,15 +1,17 @@
 import * as archiver from 'archiver';
-import {EventEmitter} from 'events';
 import * as fs from 'fs';
-import {GaxiosResponse} from 'gaxios';
 import * as globby from 'globby';
-import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
-import {cloudfunctions_v1, google} from 'googleapis';
-import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
 import * as uuid from 'uuid';
+
+import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
+import {cloudfunctions_v1, google} from 'googleapis';
+
+import {EventEmitter} from 'events';
+import {GaxiosResponse} from 'gaxios';
+import fetch from 'node-fetch';
 
 const readFile = util.promisify(fs.readFile);
 
@@ -22,7 +24,12 @@ export enum ProgressEvent {
   PACKAGING = 'PACKAGING',
   UPLOADING = 'UPLOADING',
   DEPLOYING = 'DEPLOYING',
+  CALLING = 'CALLING',
   COMPLETE = 'COMPLETE',
+}
+
+export interface CallerOptions extends GoogleAuthOptions {
+  functionName: string;
 }
 
 export interface DeployerOptions extends GoogleAuthOptions {
@@ -46,12 +53,37 @@ export interface DeployerOptions extends GoogleAuthOptions {
 }
 
 /**
- * Class that provides the `deploy` method.
+ * A generic client for GCX.
  */
-export class Deployer extends EventEmitter {
-  _options: DeployerOptions;
+class GCXClient extends EventEmitter {
   _auth: GoogleAuth;
   _gcf?: cloudfunctions_v1.Cloudfunctions;
+  
+  constructor(options?: CallerOptions) {
+    super();
+    this._auth = new GoogleAuth(options);
+  }
+  
+  /**
+   * Provides an authenticated GCF api client.
+   * @private
+   */
+  async _getGCFClient() {
+    if (!this._gcf) {
+      const auth = await google.auth.getClient(
+          {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
+      google.options({auth});
+      this._gcf = google.cloudfunctions('v1');
+    }
+    return this._gcf;
+  }
+}
+
+/**
+ * Class that provides the `deploy` method.
+ */
+export class Deployer extends GCXClient {
+  _options: DeployerOptions;
 
   constructor(options: DeployerOptions) {
     super();
@@ -265,23 +297,33 @@ export class Deployer extends EventEmitter {
     }
     return ignoreRules;
   }
+}
 
+/**
+ * Class that provides the `call` method.
+ */
+export class Caller extends GCXClient {
   /**
-   * Provides an authenticated GCF api client.
-   * @private
+   * Synchronously call a function.
    */
-  async _getGCFClient() {
-    if (!this._gcf) {
-      const auth = await google.auth.getClient(
-          {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
-      google.options({auth});
-      this._gcf = google.cloudfunctions('v1');
-    }
-    return this._gcf;
+  async call(name: string) {
+    this.emit(ProgressEvent.STARTING);
+    const gcf = await this._getGCFClient();
+    const fns = gcf.projects.locations.functions;
+    this.emit(ProgressEvent.CALLING);
+    await fns.call({
+      name,
+    });
+    this.emit(ProgressEvent.COMPLETE);
   }
 }
 
 export async function deploy(options: DeployerOptions) {
   const deployer = new Deployer(options);
   return deployer.deploy();
+}
+
+export async function call(options: CallerOptions) {
+  const caller = new Caller();
+  return caller.call(options.functionName);
 }
