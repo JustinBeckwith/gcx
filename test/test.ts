@@ -11,6 +11,10 @@ const Zip = require('node-stream-zip');
 const assertRejects = require('assert-rejects');
 
 nock.disableNetConnect();
+nock.emitter.on('no match', (request) => {
+  console.error(`No match for request:`);
+  console.error(request);
+});
 
 const unlink = util.promisify(fs.unlink);
 
@@ -100,9 +104,11 @@ describe('end to end', () => {
   });
 
   it('should call end to end', async () => {
-    mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll();
+    const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll(), mockCall()];
     const c = new gcx.Caller();
-    c.call(name);
+    const res = await c.call(name);
+    assert.strictEqual(res.data.result, '{ "data": 42 }');
+    scopes.forEach(s => s.done());
   });
 });
 
@@ -152,4 +158,13 @@ function mockExists() {
   return nock('https://cloudfunctions.googleapis.com')
       .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84')
       .reply(200);
+}
+
+/**
+ * @see https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions/call
+ */
+function mockCall() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84:call?alt=json')
+      .reply(200, { executionId: 'my-execution-id', result: '{ "data": 42 }', error: null });
 }
