@@ -104,7 +104,8 @@ describe('end to end', () => {
   });
 
   it('should call end to end', async () => {
-    const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll(), mockCall()];
+    const scopes =
+        [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll(), mockCall()];
     const c = new gcx.Caller();
     const res = await c.call(name);
     assert.strictEqual(res.data.result, '{ "data": 42 }');
@@ -165,6 +166,11 @@ function mockExists() {
  */
 function mockCall() {
   return nock('https://cloudfunctions.googleapis.com')
-      .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84:call?alt=json')
-      .reply(200, { executionId: 'my-execution-id', result: '{ "data": 42 }', error: null });
+      .get(
+          '/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84:call?alt=json')
+      .reply(200, {
+        executionId: 'my-execution-id',
+        result: '{ "data": 42 }',
+        error: null
+      });
 }

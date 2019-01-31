@@ -309,7 +309,7 @@ export class Caller extends GCXClient {
     const gcf = await this._getGCFClient();
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
-    const res = await fns.call({ name });
+    const res = await fns.call({name});
     this.emit(ProgressEvent.COMPLETE);
     return res;
   }
