@@ -63,7 +63,8 @@ describe('pack & upload', () => {
       zip.on('error', reject).on('ready', () => {
         const files = Object.keys(zip.entries());
         assert.strictEqual(files.length, 2);
-        assert.deepStrictEqual(files.sort(), ['index.js', 'package.json'].sort());
+        assert.deepStrictEqual(
+            files.sort(), ['index.js', 'package.json'].sort());
         zip.close();
         resolve();
       });
