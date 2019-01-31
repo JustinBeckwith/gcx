@@ -1,17 +1,15 @@
 import * as archiver from 'archiver';
+import {EventEmitter} from 'events';
 import * as fs from 'fs';
+import {GaxiosResponse} from 'gaxios';
 import * as globby from 'globby';
+import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
+import {cloudfunctions_v1, google} from 'googleapis';
+import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
 import * as uuid from 'uuid';
-
-import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
-import {cloudfunctions_v1, google} from 'googleapis';
-
-import {EventEmitter} from 'events';
-import {GaxiosResponse} from 'gaxios';
-import fetch from 'node-fetch';
 
 const readFile = util.promisify(fs.readFile);
 
@@ -58,12 +56,12 @@ export interface DeployerOptions extends GoogleAuthOptions {
 class GCXClient extends EventEmitter {
   _auth: GoogleAuth;
   _gcf?: cloudfunctions_v1.Cloudfunctions;
-  
+
   constructor(options?: CallerOptions) {
     super();
     this._auth = new GoogleAuth(options);
   }
-  
+
   /**
    * Provides an authenticated GCF api client.
    * @private

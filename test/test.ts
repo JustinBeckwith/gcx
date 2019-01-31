@@ -1,9 +1,10 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
-import * as gcx from '../src';
 import * as nock from 'nock';
 import * as path from 'path';
 import * as util from 'util';
+
+import * as gcx from '../src';
 
 // tslint:disable-next-line variable-name
 const Zip = require('node-stream-zip');
@@ -62,7 +63,7 @@ describe('pack & upload', () => {
       zip.on('error', reject).on('ready', () => {
         const files = Object.keys(zip.entries());
         assert.strictEqual(files.length, 2);
-        assert.deepStrictEqual(files, ['index.js', 'package.json']);
+        assert.deepStrictEqual(files.sort(), ['index.js', 'package.json'].sort());
         zip.close();
         resolve();
       });
