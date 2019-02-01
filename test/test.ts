@@ -2,13 +2,13 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as nock from 'nock';
 import * as path from 'path';
+import * as proxyquire from 'proxyquire';
 import * as util from 'util';
 
 import * as gcx from '../src';
 
 // tslint:disable-next-line variable-name
 const Zip = require('node-stream-zip');
-const assertRejects = require('assert-rejects');
 
 nock.disableNetConnect();
 
@@ -18,13 +18,30 @@ const name = '🦄';
 const targetDir = path.resolve('test/fixtures/');
 const gcloudignore = path.resolve('test/fixtures/.gcloudignore');
 
+const gcxp = proxyquire('../src/index', {
+  'google-auth-library': {
+    GoogleAuth: class {
+      async getProjectId() {
+        return 'el-gato';
+      }
+      async getClient() {
+        return class {
+          async request() {
+            return {};
+          }
+        };
+      }
+    }
+  }
+});
+
 describe('validation', () => {
   it('should throw if a name is not provided', () => {
-    assertRejects(gcx.deploy({} as gcx.DeployerOptions));
+    assert.rejects(gcx.deploy({} as gcx.DeployerOptions));
   });
 
   it('should throw if multiple triggers are provided', () => {
-    assertRejects(
+    assert.rejects(
         gcx.deploy({name, triggerBucket: 'bukkit', triggerTopic: 'toppi'}));
   });
 });
@@ -63,7 +80,7 @@ describe('pack & upload', () => {
       zip.on('error', reject).on('ready', () => {
         const files = Object.keys(zip.entries());
         assert.strictEqual(files.length, 2);
-        assert.deepStrictEqual(files, ['index.js', 'package.json']);
+        assert.deepStrictEqual(files.sort(), ['index.js', 'package.json']);
         zip.close();
         resolve();
       });
@@ -80,8 +97,8 @@ describe('pack & upload', () => {
 
 describe('cloud functions api', () => {
   it('should check to see if the function exists', async () => {
-    const scopes = [mockGCE(), mockToken(), mockExists()];
-    const deployer = new gcx.Deployer({name});
+    const scopes = [mockExists()];
+    const deployer = new gcxp.Deployer({name});
     const fullName = `projects/el-gato/locations/us-central1/functions/${name}`;
     const exists = await deployer._exists(fullName);
     assert.strictEqual(exists, true);
@@ -93,23 +110,11 @@ describe('end to end', () => {
   it('should work together end to end', async () => {
     const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
     const projectId = 'el-gato';
-    const deployer = new gcx.Deployer({name, targetDir, projectId});
+    const deployer = new gcxp.Deployer({name, targetDir, projectId});
     await deployer.deploy();
     scopes.forEach(s => s.done());
   });
 });
-
-function mockGCE() {
-  return nock('http://metadata.google.internal')
-      .get('/computeMetadata/v1/instance')
-      .reply(200, {}, {'Metadata-Flavor': 'Google'});
-}
-
-function mockToken() {
-  return nock('http://metadata.google.internal')
-      .get('/computeMetadata/v1/instance/service-accounts/default/token')
-      .reply(200, {access_token: '12345'}, {'Metadata-Flavor': 'Google'});
-}
 
 function mockUpload() {
   return nock('https://fake.local', {
