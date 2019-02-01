@@ -272,7 +272,7 @@ export class Deployer extends EventEmitter {
    */
   async _getGCFClient() {
     if (!this._gcf) {
-      const auth = await google.auth.getClient(
+      const auth = await this._auth.getClient(
           {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
       google.options({auth});
       this._gcf = google.cloudfunctions('v1');
