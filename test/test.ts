@@ -107,11 +107,20 @@ describe('cloud functions api', () => {
 });
 
 describe('end to end', () => {
-  it('should work together end to end', async () => {
+  it('should deploy end to end', async () => {
     const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
     const projectId = 'el-gato';
     const deployer = new gcxp.Deployer({name, targetDir, projectId});
     await deployer.deploy();
+    scopes.forEach(s => s.done());
+  });
+
+  it('should call end to end', async () => {
+    const scopes =
+        [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll(), mockCall()];
+    const c = new gcx.Caller();
+    const res = await c.call({functionName: name});
+    assert.strictEqual(res.data.result, '{ "data": 42 }');
     scopes.forEach(s => s.done());
   });
 });
@@ -150,4 +159,18 @@ function mockExists() {
   return nock('https://cloudfunctions.googleapis.com')
       .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84')
       .reply(200);
+}
+
+/**
+ * @see https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions/call
+ */
+function mockCall() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .get(
+          '/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84:call?alt=json')
+      .reply(200, {
+        executionId: 'my-execution-id',
+        result: '{ "data": 42 }',
+        error: null
+      });
 }
