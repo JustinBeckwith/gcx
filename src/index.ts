@@ -82,7 +82,7 @@ export class GCXClient extends EventEmitter {
  */
 export class Deployer extends GCXClient {
   _options: DeployerOptions;
-  
+
   constructor(options: DeployerOptions) {
     super();
     this._validateOptions(options);
