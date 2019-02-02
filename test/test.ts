@@ -116,8 +116,7 @@ describe('end to end', () => {
   });
 
   it('should call end to end', async () => {
-    const scopes =
-        [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll(), mockCall()];
+    const scopes = [mockCall()];
     const c = new gcxp.Caller();
     const res = await c.call({functionName: name});
     assert.strictEqual(res.data.result, '{ "data": 42 }');
@@ -166,7 +165,7 @@ function mockExists() {
  */
 function mockCall() {
   return nock('https://cloudfunctions.googleapis.com')
-      .post('/v1/*')
+      .post('/v1/%F0%9F%A6%84:call')
       .reply(200, {
         executionId: 'my-execution-id',
         result: '{ "data": 42 }',
