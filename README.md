@@ -1,5 +1,5 @@
 # gcx
-> An API and CLI for deploying Google Cloud Functions in Node.js.
+> An API and CLI for deploying and calling Google Cloud Functions in Node.js.
 
 [![NPM Version](https://img.shields.io/npm/v/gcx.svg)](https://npmjs.org/package/gcx)
 [![Build Status](https://travis-ci.com/JustinBeckwith/gcx.svg?branch=master)](https://travis-ci.com/JustinBeckwith/gcx)
@@ -12,7 +12,7 @@ $ npm install gcx
 ```
 
 ## Command Line
-`gcx` is a convenient way to deploy Google Cloud Functions.  To use as a command line application:
+`gcx` is a convenient way to deploy and call Google Cloud Functions.  To use as a command line application:
 
 ```sh
 $ npm install --save-dev gcx
@@ -26,7 +26,7 @@ Then from your `package.json`, it's super easy to add a deploy script:
 }
 ```
 
-### Positional arguments
+### Deploy positional arguments
 
 ##### FUNCTION_NAME
 ID of the function or fully qualified identifier for the function. This positional must be specified if any of the other arguments in this group are specified.
@@ -130,13 +130,16 @@ $ gcx deploy myhook
 You can also use this as a regular old API.
 
 ```js
-const {deploy} = require('gcx');
+const {call, deploy} = require('gcx');
 
 async function main() {
   await deploy({
     name: 'my-fn-name',
     region: 'us-central1'
-    ....
+    ...
+  });
+  const res = await call({
+    functionName: 'my-fn-name',
   });
 }
 main().catch(console.error);
