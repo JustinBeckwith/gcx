@@ -140,6 +140,7 @@ async function main() {
   });
   const res = await call({
     functionName: 'my-fn-name',
+    ...
   });
 }
 main().catch(console.error);
