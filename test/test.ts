@@ -165,7 +165,8 @@ function mockExists() {
  */
 function mockCall() {
   return nock('https://cloudfunctions.googleapis.com')
-      .post('/v1/projects/el-gato/locations/us-central1/function/%F0%9F%A6%84:call')
+      .post(
+          '/v1/projects/el-gato/locations/us-central1/function/%F0%9F%A6%84:call')
       .reply(200, {
         executionId: 'my-execution-id',
         result: '{ "data": 42 }',

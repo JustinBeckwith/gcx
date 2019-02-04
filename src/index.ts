@@ -311,7 +311,8 @@ export class Caller extends GCXClient {
     const gcf = await this._getGCFClient();
     const projectId = await this._auth.getProjectId();
     const region = options.region || 'us-central1';
-    const name = `projects/${projectId}/locations/${region}/function/${options.functionName}`;
+    const name = `projects/${projectId}/locations/${region}/function/${
+        options.functionName}`;
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
     const res = await fns.call({name});
