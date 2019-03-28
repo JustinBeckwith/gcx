@@ -1,15 +1,17 @@
 import * as archiver from 'archiver';
-import {EventEmitter} from 'events';
 import * as fs from 'fs';
-import {GaxiosResponse} from 'gaxios';
-import globby from 'globby';
-import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
-import {cloudfunctions_v1, google} from 'googleapis';
-import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
 import * as uuid from 'uuid';
+
+import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
+import {cloudfunctions_v1, google} from 'googleapis';
+
+import {EventEmitter} from 'events';
+import {GaxiosResponse} from 'gaxios';
+import fetch from 'node-fetch';
+import globby from 'globby';
 
 const readFile = util.promisify(fs.readFile);
 
@@ -29,6 +31,7 @@ export enum ProgressEvent {
 export interface CallerOptions extends GoogleAuthOptions {
   region?: string;
   functionName: string;
+  data?: string;
 }
 
 export interface DeployerOptions extends GoogleAuthOptions {
@@ -315,7 +318,12 @@ export class Caller extends GCXClient {
         options.functionName}`;
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
-    const res = await fns.call({name});
+    const res = await fns.call({
+      name,
+      requestBody: {
+        data: options.data,
+      }
+    });
     this.emit(ProgressEvent.COMPLETE);
     return res;
   }

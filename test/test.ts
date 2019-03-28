@@ -1,11 +1,10 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as gcx from '../src';
 import * as nock from 'nock';
 import * as path from 'path';
 import * as proxyquire from 'proxyquire';
 import * as util from 'util';
-
-import * as gcx from '../src';
 
 // tslint:disable-next-line variable-name
 const Zip = require('node-stream-zip');
@@ -122,6 +121,14 @@ describe('end to end', () => {
     assert.strictEqual(res.data.result, '{ "data": 42 }');
     scopes.forEach(s => s.done());
   });
+
+  it('should call end to end with data', async () => {
+    const scopes = [mockCallWithData()];
+    const c = new gcxp.Caller();
+    const res = await c.call({functionName: name, data: 142});
+    assert.strictEqual(res.data.result, '{ "data": 142 }');
+    scopes.forEach(s => s.done());
+  });
 });
 
 function mockUpload() {
@@ -170,6 +177,20 @@ function mockCall() {
       .reply(200, {
         executionId: 'my-execution-id',
         result: '{ "data": 42 }',
+        error: null
+      });
+}
+
+/**
+ * @see https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions/call
+ */
+function mockCallWithData() {
+  return nock('https://cloudfunctions.googleapis.com')
+      .post(
+          '/v1/projects/el-gato/locations/us-central1/function/%F0%9F%A6%84:call')
+      .reply(200, {
+        executionId: 'my-execution-id',
+        result: '{ "data": 142 }',
         error: null
       });
 }
