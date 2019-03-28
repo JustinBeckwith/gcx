@@ -1,10 +1,11 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
-import * as gcx from '../src';
 import * as nock from 'nock';
 import * as path from 'path';
 import * as proxyquire from 'proxyquire';
 import * as util from 'util';
+
+import * as gcx from '../src';
 
 // tslint:disable-next-line variable-name
 const Zip = require('node-stream-zip');
