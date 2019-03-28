@@ -29,6 +29,7 @@ export enum ProgressEvent {
 export interface CallerOptions extends GoogleAuthOptions {
   region?: string;
   functionName: string;
+  data?: string;
 }
 
 export interface DeployerOptions extends GoogleAuthOptions {
@@ -315,7 +316,12 @@ export class Caller extends GCXClient {
         options.functionName}`;
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
-    const res = await fns.call({name});
+    const res = await fns.call({
+      name,
+      requestBody: {
+        data: options.data,
+      }
+    });
     this.emit(ProgressEvent.COMPLETE);
     return res;
   }
