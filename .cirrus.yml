@@ -8,6 +8,7 @@ lint_task:
 test_task:
   container:
     matrix:
+      image: node:12
       image: node:11
       image: node:10
       image: node:8
