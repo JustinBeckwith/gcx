@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as meow from 'meow';
-import {Deployer, DeployerOptions, ProgressEvent} from './';
+import { Deployer, DeployerOptions, ProgressEvent } from './';
 import * as updateNotifier from 'update-notifier';
 import ora from 'ora';
 import * as util from 'util';
@@ -8,10 +8,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const pkg = require('../../package.json');
-updateNotifier({pkg}).notify();
+updateNotifier({ pkg }).notify();
 
 const cli = meow(
-    `
+  `
     Usage
       $ gcx deploy FUNCTION_NAME
 
@@ -113,27 +113,28 @@ const cli = meow(
     Examples
       $ gcx deploy some-cloud-function
 `,
-    {
-      flags: {
-        description: {type: 'string'},
-        entryPoint: {type: 'string'},
-        runtime: {type: 'string'},
-        timeout: {type: 'string'},
-        network: {type: 'string'},
-        retry: {type: 'boolean'},
-        memory: {type: 'string'},
-        project: {type: 'string'},
-        projectId: {type: 'string'},
-        triggerBucket: {type: 'string'},
-        triggerHttp: {type: 'boolean'},
-        triggerTopic: {type: 'string'},
-        triggerResource: {type: 'string'},
-        triggerEvent: {type: 'string'},
-        targetDir: {type: 'string'},
-        region: {type: 'string'},
-        maxInstances: {type: 'string'}
-      }
-    });
+  {
+    flags: {
+      description: { type: 'string' },
+      entryPoint: { type: 'string' },
+      runtime: { type: 'string' },
+      timeout: { type: 'string' },
+      network: { type: 'string' },
+      retry: { type: 'boolean' },
+      memory: { type: 'string' },
+      project: { type: 'string' },
+      projectId: { type: 'string' },
+      triggerBucket: { type: 'string' },
+      triggerHttp: { type: 'boolean' },
+      triggerTopic: { type: 'string' },
+      triggerResource: { type: 'string' },
+      triggerEvent: { type: 'string' },
+      targetDir: { type: 'string' },
+      region: { type: 'string' },
+      maxInstances: { type: 'string' },
+    },
+  }
+);
 
 async function main() {
   if (cli.input.length !== 2) {
@@ -153,31 +154,34 @@ async function main() {
       const spinny = ora('Initializing deployment...').start();
       const deployinator = new Deployer(opts);
       deployinator
-          .on(ProgressEvent.PACKAGING,
-              () => {
-                spinny.stopAndPersist(
-                    {symbol: '🤖', text: 'Deployment initialized.'});
-                spinny.start('Packaging sources...');
-              })
-          .on(ProgressEvent.UPLOADING,
-              () => {
-                spinny.stopAndPersist(
-                    {symbol: '📦', text: 'Source code packaged.'});
-                spinny.start('Uploading source...');
-              })
-          .on(ProgressEvent.DEPLOYING,
-              () => {
-                spinny.stopAndPersist(
-                    {symbol: '🛸', text: 'Source uploaded to cloud.'});
-                spinny.start('Deploying function...');
-              })
-          .on(ProgressEvent.COMPLETE, () => {
-            const seconds = (Date.now() - start) / 1000;
-            spinny.stopAndPersist({
-              symbol: '🚀',
-              text: `Function deployed in ${seconds} seconds.`
-            });
+        .on(ProgressEvent.PACKAGING, () => {
+          spinny.stopAndPersist({
+            symbol: '🤖',
+            text: 'Deployment initialized.',
           });
+          spinny.start('Packaging sources...');
+        })
+        .on(ProgressEvent.UPLOADING, () => {
+          spinny.stopAndPersist({
+            symbol: '📦',
+            text: 'Source code packaged.',
+          });
+          spinny.start('Uploading source...');
+        })
+        .on(ProgressEvent.DEPLOYING, () => {
+          spinny.stopAndPersist({
+            symbol: '🛸',
+            text: 'Source uploaded to cloud.',
+          });
+          spinny.start('Deploying function...');
+        })
+        .on(ProgressEvent.COMPLETE, () => {
+          const seconds = (Date.now() - start) / 1000;
+          spinny.stopAndPersist({
+            symbol: '🚀',
+            text: `Function deployed in ${seconds} seconds.`,
+          });
+        });
       await deployinator.deploy();
       break;
     default:
@@ -193,9 +197,9 @@ async function generateIgnoreFile(targetDir: string) {
   `);
   await new Promise((resolve, reject) => {
     fs.createReadStream(path.join(__dirname, '../../src/.gcloudignore'))
-        .pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
-        .on('error', reject)
-        .on('close', resolve);
+      .pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
+      .on('error', reject)
+      .on('close', resolve);
   });
 }
 

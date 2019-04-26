@@ -1,10 +1,10 @@
 import * as archiver from 'archiver';
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
-import {GaxiosResponse} from 'gaxios';
+import { GaxiosResponse } from 'gaxios';
 import globby from 'globby';
-import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
-import {cloudfunctions_v1, google} from 'googleapis';
+import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
+import { cloudfunctions_v1, google } from 'googleapis';
 import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
@@ -13,9 +13,9 @@ import * as uuid from 'uuid';
 
 const readFile = util.promisify(fs.readFile);
 
-type Bag<T = {}> = {
+interface Bag<T = {}> {
   [index: string]: T;
-};
+}
 
 export enum ProgressEvent {
   STARTING = 'STARTING',
@@ -70,9 +70,10 @@ export class GCXClient extends EventEmitter {
    */
   async _getGCFClient() {
     if (!this._gcf) {
-      const auth = await this._auth.getClient(
-          {scopes: ['https://www.googleapis.com/auth/cloud-platform']});
-      google.options({auth});
+      const auth = await this._auth.getClient({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      });
+      google.options({ auth });
       this._gcf = google.cloudfunctions('v1');
     }
     return this._gcf;
@@ -109,7 +110,7 @@ export class Deployer extends GCXClient {
     const parent = `projects/${projectId}/locations/${region}`;
     const name = `${parent}/functions/${this._options.name}`;
     const fns = gcf.projects.locations.functions;
-    const res = await fns.generateUploadUrl({parent});
+    const res = await fns.generateUploadUrl({ parent });
     const sourceUploadUrl = res.data.uploadUrl!;
     this.emit(ProgressEvent.PACKAGING);
     const zipPath = await this._pack();
@@ -121,9 +122,9 @@ export class Deployer extends GCXClient {
     let result: GaxiosResponse<cloudfunctions_v1.Schema$Operation>;
     if (exists) {
       const updateMask = this._getUpdateMask();
-      result = await fns.patch({name, updateMask, requestBody: body});
+      result = await fns.patch({ name, updateMask, requestBody: body });
     } else {
-      result = await fns.create({location: parent, requestBody: body});
+      result = await fns.create({ location: parent, requestBody: body });
     }
     const operation = result.data;
     await this._poll(operation.name!);
@@ -137,7 +138,7 @@ export class Deployer extends GCXClient {
    */
   async _poll(name: string) {
     const gcf = await this._getGCFClient();
-    const res = await gcf.operations.get({name});
+    const res = await gcf.operations.get({ name });
     const operation = res.data;
     if (operation.error) {
       const message = JSON.stringify(operation.error);
@@ -180,9 +181,11 @@ export class Deployer extends GCXClient {
     if (!options.name) {
       throw new Error('The `name` option is required.');
     }
-    const triggerCount = ['triggerHTTP', 'triggerBucket', 'triggerTopic']
-                             .filter(prop => !!((options as {}) as Bag)[prop])
-                             .length;
+    const triggerCount = [
+      'triggerHTTP',
+      'triggerBucket',
+      'triggerTopic',
+    ].filter(prop => !!((options as {}) as Bag)[prop]).length;
     if (triggerCount > 1) {
       throw new Error('At most 1 trigger may be defined.');
     }
@@ -204,19 +207,21 @@ export class Deployer extends GCXClient {
       runtime: this._options.runtime || 'nodejs8',
       timeout: this._options.timeout,
       availableMemoryMb: this._options.memory,
-      maxInstances: this._options.maxInstances
+      maxInstances: this._options.maxInstances,
     };
     if (this._options.triggerTopic) {
       requestBody.eventTrigger = {
-        eventType: this._options.triggerEvent ||
-            'providers/cloud.pubsub/eventTypes/topic.publish',
-        resource: this._options.triggerTopic
+        eventType:
+          this._options.triggerEvent ||
+          'providers/cloud.pubsub/eventTypes/topic.publish',
+        resource: this._options.triggerTopic,
       };
     } else if (this._options.triggerBucket) {
       requestBody.eventTrigger = {
-        eventType: this._options.triggerEvent ||
-            'providers/cloud.storage/eventTypes/object.change',
-        resource: this._options.triggerBucket
+        eventType:
+          this._options.triggerEvent ||
+          'providers/cloud.storage/eventTypes/object.change',
+        resource: this._options.triggerBucket,
       };
     } else {
       requestBody.httpsTrigger = {};
@@ -232,7 +237,7 @@ export class Deployer extends GCXClient {
   async _exists(name: string) {
     const gcf = await this._getGCFClient();
     try {
-      await gcf.projects.locations.functions.get({name});
+      await gcf.projects.locations.functions.get({ name });
       return true;
     } catch (e) {
       return false;
@@ -252,8 +257,8 @@ export class Deployer extends GCXClient {
       body: stream,
       headers: {
         'Content-Type': 'application/zip',
-        'x-goog-content-length-range': '0,104857600'
-      }
+        'x-goog-content-length-range': '0,104857600',
+      },
     });
   }
 
@@ -270,11 +275,13 @@ export class Deployer extends GCXClient {
       archive.on('error', reject);
       archive.pipe(output);
       const ignorePatterns = await this._getIgnoreRules();
-      const files = await globby(
-          '**/**', {ignore: ignorePatterns, cwd: this._options.targetDir});
+      const files = await globby('**/**', {
+        ignore: ignorePatterns,
+        cwd: this._options.targetDir,
+      });
       files.forEach(f => {
         const fullPath = path.join(this._options.targetDir!, f);
-        archive.append(fs.createReadStream(fullPath), {name: f});
+        archive.append(fs.createReadStream(fullPath), { name: f });
       });
       archive.finalize();
     });
@@ -293,8 +300,7 @@ export class Deployer extends GCXClient {
       ignoreRules = contents.split('\n').filter(line => {
         return !line.startsWith('#') && line.trim() !== '';
       });
-    } catch (e) {
-    }
+    } catch (e) {}
     return ignoreRules;
   }
 }
@@ -313,14 +319,15 @@ export class Caller extends GCXClient {
     const projectId = await this._auth.getProjectId();
     const region = options.region || 'us-central1';
     const name = `projects/${projectId}/locations/${region}/function/${
-        options.functionName}`;
+      options.functionName
+    }`;
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
     const res = await fns.call({
       name,
       requestBody: {
         data: options.data,
-      }
+      },
     });
     this.emit(ProgressEvent.COMPLETE);
     return res;
