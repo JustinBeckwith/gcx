@@ -29,6 +29,9 @@
     "functions",
     "serverless"
   ],
+  "engines": {
+    "node": ">=8"
+  },
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "dependencies": {
