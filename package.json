@@ -13,14 +13,14 @@
   ],
   "repository": "JustinBeckwith/gcx",
   "scripts": {
-    "test": "nyc mocha build/test --require source-map-support/register --timeout 60000",
+    "test": "c8 mocha build/test --require source-map-support/register --timeout 60000",
     "lint": "gts check",
     "compile": "tsc -p .",
     "fix": "gts fix",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "watch": "tsc -p . --watch",
-    "codecov": "nyc report --reporter=json && codecov -f coverage/*.json"
+    "codecov": "c8 report --reporter=json && codecov -f coverage/*.json"
   },
   "keywords": [
     "google",
@@ -53,18 +53,18 @@
     "@types/proxyquire": "^1.3.28",
     "@types/update-notifier": "^2.5.0",
     "@types/uuid": "^3.4.4",
+    "c8": "^4.1.5",
     "codecov": "^3.1.0",
     "gts": "^1.0.0",
     "mocha": "^6.0.0",
     "nock": "^10.0.2",
     "node-stream-zip": "^1.7.0",
-    "nyc": "^14.0.0",
     "proxyquire": "^2.1.0",
     "semantic-release": "^15.13.3",
     "source-map-support": "^0.5.9",
     "typescript": "~3.4.0"
   },
-  "nyc": {
+  "c8": {
     "exclude": [
       "build/test"
     ]
