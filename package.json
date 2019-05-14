@@ -38,7 +38,7 @@
     "archiver": "^3.0.0",
     "globby": "^9.0.0",
     "google-auth-library": "^3.0.0",
-    "googleapis": "^39.0.0",
+    "googleapis": "^40.0.0",
     "meow": "^5.0.0",
     "node-fetch": "^2.3.0",
     "ora": "^3.0.0",
