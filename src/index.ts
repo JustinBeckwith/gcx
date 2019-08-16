@@ -70,9 +70,7 @@ export class GCXClient extends EventEmitter {
    */
   async _getGCFClient() {
     if (!this._gcf) {
-      const auth = await this._auth.getClient({
-        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-      });
+      const auth = await this._auth.getClient();
       google.options({ auth });
       this._gcf = google.cloudfunctions('v1');
     }
@@ -96,6 +94,7 @@ export class Deployer extends GCXClient {
     if (!options.targetDir) {
       this._options.targetDir = process.cwd();
     }
+    options.scopes = ['https://www.googleapis.com/auth/cloud-platform'];
     this._auth = new GoogleAuth(options);
   }
 
@@ -318,9 +317,7 @@ export class Caller extends GCXClient {
     const gcf = await this._getGCFClient();
     const projectId = await this._auth.getProjectId();
     const region = options.region || 'us-central1';
-    const name = `projects/${projectId}/locations/${region}/function/${
-      options.functionName
-    }`;
+    const name = `projects/${projectId}/locations/${region}/function/${options.functionName}`;
     const fns = gcf.projects.locations.functions;
     this.emit(ProgressEvent.CALLING);
     const res = await fns.call({
