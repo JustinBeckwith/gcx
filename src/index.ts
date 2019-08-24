@@ -2,7 +2,7 @@ import * as archiver from 'archiver';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import { GaxiosResponse } from 'gaxios';
-import globby from 'globby';
+import globby = require('globby');
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import { cloudfunctions_v1, google } from 'googleapis';
 import fetch from 'node-fetch';
