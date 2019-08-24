@@ -2,7 +2,7 @@
 > An API and CLI for deploying and calling Google Cloud Functions in Node.js.
 
 [![NPM Version](https://img.shields.io/npm/v/gcx.svg)](https://npmjs.org/package/gcx)
-[![Build Status](https://travis-ci.com/JustinBeckwith/gcx.svg?branch=master)](https://travis-ci.com/JustinBeckwith/gcx)
+[![Build Status](https://api.cirrus-ci.com/github/JustinBeckwith/gcx.svg)](https://cirrus-ci.com/github/JustinBeckwith/gcx)
 [![codecov](https://codecov.io/gh/JustinBeckwith/gcx/branch/master/graph/badge.svg)](https://codecov.io/gh/JustinBeckwith/gcx)
 [![Dependency Status](https://img.shields.io/david/JustinBeckwith/gcx.svg)](https://david-dm.org/JustinBeckwith/gcx)
 [![Known Vulnerabilities](https://snyk.io/test/github/JustinBeckwith/gcx/badge.svg)](https://snyk.io/test/github/JustinBeckwith/gcx)
