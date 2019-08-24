@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "archiver": "^3.0.0",
-    "globby": "^9.0.0",
+    "globby": "^10.0.0",
     "googleapis": "^42.0.0",
     "meow": "^5.0.0",
     "node-fetch": "^2.3.0",
