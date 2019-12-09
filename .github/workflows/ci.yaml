@@ -1,5 +1,5 @@
 on: [push]
-name: PRCI
+name: ci
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,3 +10,8 @@ jobs:
       - uses: actions/checkout@v1
       - run: npm install
       - run: npm test
+  lint:
+    steps:
+      - uses: actions/checkout@v1
+      - run: npm install
+      - run: npm run lint
