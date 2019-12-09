@@ -1,0 +1,11 @@
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+      node: [8, 10, 12]
+    steps:
+      - uses: actions/checkout@v1
+      - run: npm install
+      - run: npm test
