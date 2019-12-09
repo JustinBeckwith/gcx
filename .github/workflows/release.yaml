@@ -2,6 +2,7 @@ on:
   push:
     branches:
       - master
+jobs:
   release:
     runs-on: ubuntu-test
     needs: [test, lint]
