@@ -1,7 +1,6 @@
 on: [push]
 name: PRCI
 jobs:
-  name: Unit Tests
   test:
     runs-on: ubuntu-latest
     strategy:
