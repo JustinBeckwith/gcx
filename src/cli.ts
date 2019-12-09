@@ -2,7 +2,7 @@
 import * as meow from 'meow';
 import { Deployer, DeployerOptions, ProgressEvent } from './';
 import * as updateNotifier from 'update-notifier';
-import ora from 'ora';
+import ora = require('ora');
 import * as util from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
