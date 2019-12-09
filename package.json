@@ -20,7 +20,6 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "watch": "tsc -p . --watch",
-    "codecov": "c8 report --reporter=json && codecov -f coverage/*.json",
     "coverage": "c8 report --reporter=json"
   },
   "keywords": [
