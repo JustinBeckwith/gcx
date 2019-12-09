@@ -8,12 +8,18 @@ jobs:
         node: [8, 10, 12, 13]
     steps:
       - uses: actions/checkout@v1
-      - run: npm install
-      - run: npm test
-      - run: node --version
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      - run: |
+          node --version
+          npm install
+          npm test
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - run: npm install
-      - run: npm run lint
+      - uses: docker://node:12
+        run: |
+          npm install
+          npm run lint
