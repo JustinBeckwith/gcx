@@ -1,0 +1,18 @@
+on:
+  push:
+    branches:
+      - master
+  release:
+    runs-on: ubuntu-test
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: npm install
+      - run: npm run compile
+      - run: npx semantic-release
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
