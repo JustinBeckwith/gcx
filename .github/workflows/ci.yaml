@@ -38,7 +38,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
   release:
     if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-test
+    runs-on: ubuntu-latest
     needs: [test, lint]
     steps:
       - uses: actions/checkout@v1
