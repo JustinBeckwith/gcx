@@ -1,6 +1,6 @@
 {
   "name": "gcx",
-  "version": "0.0.3",
+  "version": "0.0.0",
   "description": "An API and CLI for deploying Google Cloud Functions in Node.js.",
   "bin": {
     "gcx": "./build/src/cli.js"
@@ -29,7 +29,7 @@
     "serverless"
   ],
   "engines": {
-    "node": ">=8"
+    "node": ">=10"
   },
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
