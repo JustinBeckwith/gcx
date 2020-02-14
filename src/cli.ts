@@ -107,6 +107,12 @@ const cli = meow(
           at a given time. This feature is currently in alpha, available only
           for whitelisted users.
 
+      --vpc-connector=VPC_CONNECTOR
+          Name of VPC connector. Connector name must be in the fully-qualified format of 
+          projects/{project}/locations/{region}/connectors/{connector_name} or {connector_name}    
+      
+          Select a VPC connector to access a Serverless VPC network 
+
       --help
           Show this command.
 
@@ -132,6 +138,7 @@ const cli = meow(
       targetDir: { type: 'string' },
       region: { type: 'string' },
       maxInstances: { type: 'string' },
+      vpcConnector: { type: 'string' },
     },
   }
 );
