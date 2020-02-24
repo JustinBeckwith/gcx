@@ -151,7 +151,7 @@ async function main() {
   switch (cli.input[0]) {
     case 'deploy':
       const start = Date.now();
-      const opts = cli.flags as DeployerOptions;
+      const opts = (cli.flags as {}) as DeployerOptions;
       opts.name = cli.input[1];
       const targetDir = opts.targetDir || process.cwd();
       const hasIgnore = await hasIgnoreFile(targetDir);
