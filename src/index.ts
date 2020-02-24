@@ -41,6 +41,7 @@ export interface DeployerOptions extends GoogleAuthOptions {
   memory?: number;
   network?: string;
   maxInstances?: number;
+  vpcConnector?: string;
   timeout?: string;
   triggerHTTP?: boolean;
   triggerTopic?: string;
@@ -161,6 +162,7 @@ export class Deployer extends GCXClient {
     if (opts.description) fields.push('description');
     if (opts.entryPoint) fields.push('entryPoint');
     if (opts.maxInstances) fields.push('maxInstances');
+    if (opts.vpcConnector) fields.push('vpcConnector');
     if (opts.network) fields.push('network');
     if (opts.runtime) fields.push('runtime');
     if (opts.timeout) fields.push('timeout');
@@ -207,6 +209,7 @@ export class Deployer extends GCXClient {
       timeout: this._options.timeout,
       availableMemoryMb: this._options.memory,
       maxInstances: this._options.maxInstances,
+      vpcConnector: this._options.vpcConnector,
     };
     if (this._options.triggerTopic) {
       requestBody.eventTrigger = {
