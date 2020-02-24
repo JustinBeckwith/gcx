@@ -37,7 +37,7 @@
     "archiver": "^3.0.0",
     "globby": "^11.0.0",
     "googleapis": "^47.0.0",
-    "meow": "^5.0.0",
+    "meow": "^6.0.0",
     "node-fetch": "^2.3.0",
     "ora": "^4.0.0",
     "update-notifier": "^4.0.0",
