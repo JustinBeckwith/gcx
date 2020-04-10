@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import * as meow from 'meow';
-import { Deployer, DeployerOptions, ProgressEvent } from './';
+import {Deployer, DeployerOptions, ProgressEvent} from './';
 import * as updateNotifier from 'update-notifier';
 import ora = require('ora');
 import * as util from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require('../../package.json');
-updateNotifier({ pkg }).notify();
+updateNotifier({pkg}).notify();
 
 const cli = meow(
   `
@@ -108,10 +109,10 @@ const cli = meow(
           for whitelisted users.
 
       --vpc-connector=VPC_CONNECTOR
-          Name of VPC connector. Connector name must be in the fully-qualified format of 
-          projects/{project}/locations/{region}/connectors/{connector_name} or {connector_name}    
-      
-          Select a VPC connector to access a Serverless VPC network 
+          Name of VPC connector. Connector name must be in the fully-qualified format of
+          projects/{project}/locations/{region}/connectors/{connector_name} or {connector_name}
+
+          Select a VPC connector to access a Serverless VPC network
 
       --help
           Show this command.
@@ -121,24 +122,24 @@ const cli = meow(
 `,
   {
     flags: {
-      description: { type: 'string' },
-      entryPoint: { type: 'string' },
-      runtime: { type: 'string' },
-      timeout: { type: 'string' },
-      network: { type: 'string' },
-      retry: { type: 'boolean' },
-      memory: { type: 'string' },
-      project: { type: 'string' },
-      projectId: { type: 'string' },
-      triggerBucket: { type: 'string' },
-      triggerHttp: { type: 'boolean' },
-      triggerTopic: { type: 'string' },
-      triggerResource: { type: 'string' },
-      triggerEvent: { type: 'string' },
-      targetDir: { type: 'string' },
-      region: { type: 'string' },
-      maxInstances: { type: 'string' },
-      vpcConnector: { type: 'string' },
+      description: {type: 'string'},
+      entryPoint: {type: 'string'},
+      runtime: {type: 'string'},
+      timeout: {type: 'string'},
+      network: {type: 'string'},
+      retry: {type: 'boolean'},
+      memory: {type: 'string'},
+      project: {type: 'string'},
+      projectId: {type: 'string'},
+      triggerBucket: {type: 'string'},
+      triggerHttp: {type: 'boolean'},
+      triggerTopic: {type: 'string'},
+      triggerResource: {type: 'string'},
+      triggerEvent: {type: 'string'},
+      targetDir: {type: 'string'},
+      region: {type: 'string'},
+      maxInstances: {type: 'string'},
+      vpcConnector: {type: 'string'},
     },
   }
 );
@@ -149,7 +150,7 @@ async function main() {
     return;
   }
   switch (cli.input[0]) {
-    case 'deploy':
+    case 'deploy': {
       const start = Date.now();
       const opts = (cli.flags as {}) as DeployerOptions;
       opts.name = cli.input[1];
@@ -191,6 +192,7 @@ async function main() {
         });
       await deployinator.deploy();
       break;
+    }
     default:
       cli.showHelp();
   }

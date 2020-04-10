@@ -1,10 +1,12 @@
 import * as archiver from 'archiver';
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import * as fs from 'fs';
-import { GaxiosResponse } from 'gaxios';
+// eslint-disable-next-line node/no-extraneous-import
+import {GaxiosResponse} from 'gaxios';
 import globby = require('globby');
-import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
-import { cloudfunctions_v1, google } from 'googleapis';
+// eslint-disable-next-line node/no-extraneous-import
+import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
+import {cloudfunctions_v1, google} from 'googleapis';
 import fetch from 'node-fetch';
 import * as os from 'os';
 import * as path from 'path';
@@ -72,7 +74,7 @@ export class GCXClient extends EventEmitter {
   async _getGCFClient() {
     if (!this._gcf) {
       const auth = await this._auth.getClient();
-      google.options({ auth });
+      google.options({auth});
       this._gcf = google.cloudfunctions('v1');
     }
     return this._gcf;
@@ -110,7 +112,7 @@ export class Deployer extends GCXClient {
     const parent = `projects/${projectId}/locations/${region}`;
     const name = `${parent}/functions/${this._options.name}`;
     const fns = gcf.projects.locations.functions;
-    const res = await fns.generateUploadUrl({ parent });
+    const res = await fns.generateUploadUrl({parent});
     const sourceUploadUrl = res.data.uploadUrl!;
     this.emit(ProgressEvent.PACKAGING);
     const zipPath = await this._pack();
@@ -122,9 +124,9 @@ export class Deployer extends GCXClient {
     let result: GaxiosResponse<cloudfunctions_v1.Schema$Operation>;
     if (exists) {
       const updateMask = this._getUpdateMask();
-      result = await fns.patch({ name, updateMask, requestBody: body });
+      result = await fns.patch({name, updateMask, requestBody: body});
     } else {
-      result = await fns.create({ location: parent, requestBody: body });
+      result = await fns.create({location: parent, requestBody: body});
     }
     const operation = result.data;
     await this._poll(operation.name!);
@@ -138,7 +140,7 @@ export class Deployer extends GCXClient {
    */
   async _poll(name: string) {
     const gcf = await this._getGCFClient();
-    const res = await gcf.operations.get({ name });
+    const res = await gcf.operations.get({name});
     const operation = res.data;
     if (operation.error) {
       const message = JSON.stringify(operation.error);
@@ -239,7 +241,7 @@ export class Deployer extends GCXClient {
   async _exists(name: string) {
     const gcf = await this._getGCFClient();
     try {
-      await gcf.projects.locations.functions.get({ name });
+      await gcf.projects.locations.functions.get({name});
       return true;
     } catch (e) {
       return false;
@@ -269,6 +271,7 @@ export class Deployer extends GCXClient {
    * @private
    */
   async _pack(): Promise<string> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise<string>(async (resolve, reject) => {
       const zipPath = path.join(os.tmpdir(), uuid.v4()) + '.zip';
       const output = fs.createWriteStream(zipPath);
@@ -283,7 +286,7 @@ export class Deployer extends GCXClient {
       });
       files.forEach(f => {
         const fullPath = path.join(this._options.targetDir!, f);
-        archive.append(fs.createReadStream(fullPath), { name: f });
+        archive.append(fs.createReadStream(fullPath), {name: f});
       });
       archive.finalize();
     });
@@ -302,7 +305,9 @@ export class Deployer extends GCXClient {
       ignoreRules = contents.split('\n').filter(line => {
         return !line.startsWith('#') && line.trim() !== '';
       });
-    } catch (e) {}
+    } catch (e) {
+      // blergh
+    }
     return ignoreRules;
   }
 }
