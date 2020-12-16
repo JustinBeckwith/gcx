@@ -44,7 +44,7 @@
     "uuid": "^8.0.0"
   },
   "devDependencies": {
-    "@types/archiver": "^3.0.0",
+    "@types/archiver": "^5.0.0",
     "@types/mocha": "^8.0.0",
     "@types/node": "^10.12.7",
     "@types/node-fetch": "^2.1.3",
