@@ -82,7 +82,7 @@ describe('pack & upload', () => {
     const deployer = new gcx.Deployer({name, targetDir});
     zipFile = await deployer._pack();
     const zip = new Zip({file: zipFile, storeEntries: true});
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       zip.on('error', reject).on('ready', () => {
         const files = Object.keys(zip.entries());
         assert.strictEqual(files.length, 2);
