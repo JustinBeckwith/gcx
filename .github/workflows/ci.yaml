@@ -35,7 +35,7 @@ jobs:
   links:
     runs-on: ubuntu-latest
     steps:
-      - uses: JustinBeckwith/linkinator-action@v1.0.0
+      - uses: JustinBeckwith/linkinator-action@v1
   release:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
