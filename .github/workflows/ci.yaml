@@ -32,6 +32,10 @@ jobs:
           node-version: 12
       - run: npm install
       - run: npm run lint
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JustinBeckwith/linkinator-action
   release:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
