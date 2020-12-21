@@ -35,9 +35,8 @@ jobs:
   links:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - uses: JustinBeckwith/linkinator-action@v1
-        with:
-          paths: 'README.md'
   release:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
