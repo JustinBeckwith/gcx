@@ -2,9 +2,8 @@
 > An API and CLI for deploying and calling Google Cloud Functions in Node.js.
 
 [![NPM Version](https://img.shields.io/npm/v/gcx.svg)](https://npmjs.org/package/gcx)
-[![Build Status](https://api.cirrus-ci.com/github/JustinBeckwith/gcx.svg)](https://cirrus-ci.com/github/JustinBeckwith/gcx)
-[![codecov](https://codecov.io/gh/JustinBeckwith/gcx/branch/master/graph/badge.svg)](https://codecov.io/gh/JustinBeckwith/gcx)
-[![Dependency Status](https://img.shields.io/david/JustinBeckwith/gcx.svg)](https://david-dm.org/JustinBeckwith/gcx)
+[![Build Status](https://github.com/JustinBeckwith/gcx/actions/workflows/ci.yaml/badge.svg?branch=main))](https://github.com/JustinBeckwith/gcx/actions)
+[![codecov](https://codecov.io/gh/JustinBeckwith/gcx/branch/main/graph/badge.svg)](https://codecov.io/gh/JustinBeckwith/gcx)
 [![Known Vulnerabilities](https://snyk.io/test/github/JustinBeckwith/gcx/badge.svg)](https://snyk.io/test/github/JustinBeckwith/gcx)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
