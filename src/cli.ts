@@ -32,10 +32,18 @@ const cli = meow(
           The Cloud region for the function.
 
       --runtime=RUNTIME
-          The runtime in which to run the function. Defaults to nodejs6.
-            ◆ nodejs6
-            ◆ nodejs8
-            ◆ python37
+          The runtime in which to run the function. Defaults to nodejs14.
+            ◆ nodejs10: Node.js 10
+            ◆ nodejs12: Node.js 12
+            ◆ nodejs14: Node.js 14
+            ◆ python37: Python 3.7
+            ◆ python38: Python 3.8
+            ◆ python39: Python 3.9
+            ◆ go111: Go 1.11
+            ◆ go113: Go 1.13
+            ◆ java11: Java 11
+            ◆ dotnet3: .NET Framework 3
+            ◆ ruby26: Ruby 2.6
 
       --target-dir
           The directory that contains the sources to be deployed.  Defaults
