@@ -207,7 +207,7 @@ export class Deployer extends GCXClient {
       sourceUploadUrl,
       entryPoint: this._options.entryPoint,
       network: this._options.network,
-      runtime: this._options.runtime || 'nodejs8',
+      runtime: this._options.runtime || 'nodejs14',
       timeout: this._options.timeout,
       availableMemoryMb: this._options.memory,
       maxInstances: this._options.maxInstances,
