@@ -188,7 +188,7 @@ export class Deployer extends GCXClient {
       'triggerHTTP',
       'triggerBucket',
       'triggerTopic',
-    ].filter(prop => !!((options as {}) as Bag)[prop]).length;
+    ].filter(prop => !!(options as {} as Bag)[prop]).length;
     if (triggerCount > 1) {
       throw new Error('At most 1 trigger may be defined.');
     }
