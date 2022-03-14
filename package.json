@@ -36,7 +36,7 @@
   "dependencies": {
     "archiver": "^5.0.0",
     "globby": "^11.0.0",
-    "googleapis": "^96.0.0",
+    "googleapis": "^97.0.0",
     "meow": "^8.0.0",
     "node-fetch": "^2.3.0",
     "ora": "^5.0.0",
