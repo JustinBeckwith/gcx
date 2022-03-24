@@ -39,7 +39,7 @@
     "googleapis": "^98.0.0",
     "meow": "^8.0.0",
     "node-fetch": "^2.3.0",
-    "ora": "^5.0.0",
+    "ora": "^6.0.0",
     "update-notifier": "^5.0.0",
     "uuid": "^8.0.0"
   },
