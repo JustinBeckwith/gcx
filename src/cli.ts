@@ -1,14 +1,15 @@
 #!/usr/bin/env node
-import * as meow from 'meow';
-import {Deployer, DeployerOptions, ProgressEvent} from './';
-import * as updateNotifier from 'update-notifier';
-import ora = require('ora');
-import * as util from 'util';
-import * as fs from 'fs';
-import * as path from 'path';
+import meow from 'meow';
+import {Deployer, DeployerOptions, ProgressEvent} from './index.js';
+import updateNotifier from 'update-notifier';
+import ora from 'ora';
+import util from 'util';
+import fs from 'fs';
+import path from 'path';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pkg = require('../../package.json');
+const pkg = JSON.parse(
+  fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')
+);
 updateNotifier({pkg}).notify();
 
 const cli = meow(
@@ -129,6 +130,7 @@ const cli = meow(
       $ gcx deploy some-cloud-function
 `,
   {
+    importMeta: import.meta,
     flags: {
       description: {type: 'string'},
       entryPoint: {type: 'string'},
