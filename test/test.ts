@@ -1,39 +1,19 @@
-import * as assert from 'assert';
-import * as fs from 'fs';
-import * as nock from 'nock';
-import * as path from 'path';
-import * as proxyquire from 'proxyquire';
-import * as util from 'util';
+import assert from 'assert';
+import fs from 'fs';
+import nock from 'nock';
+import path from 'path';
 import {describe, it} from 'mocha';
-import * as gcx from '../src';
+import Zip from 'node-stream-zip';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Zip = require('node-stream-zip');
+import * as gcx from '../src/index.js';
 
 nock.disableNetConnect();
-
-const unlink = util.promisify(fs.unlink);
 
 const name = '🦄';
 const targetDir = path.resolve('test/fixtures/');
 const gcloudignore = path.resolve('test/fixtures/.gcloudignore');
 
-const gcxp = proxyquire('../src/index', {
-  'google-auth-library': {
-    GoogleAuth: class {
-      async getProjectId() {
-        return 'el-gato';
-      }
-      async getClient() {
-        return class {
-          async request() {
-            return {};
-          }
-        };
-      }
-    },
-  },
-});
+process.env.GCLOUD_PROJECT = 'el-gato';
 
 describe('validation', () => {
   it('should throw if a name is not provided', () => {
@@ -70,7 +50,7 @@ describe('ignore rules', () => {
     });
     const deployer = new gcx.Deployer({name});
     const rules = await deployer._getIgnoreRules();
-    await unlink('.gcloudignore');
+    await fs.promises.unlink('.gcloudignore');
     assert.deepStrictEqual(rules, expected);
   });
 });
@@ -83,7 +63,8 @@ describe('pack & upload', () => {
     zipFile = await deployer._pack();
     const zip = new Zip({file: zipFile, storeEntries: true});
     await new Promise<void>((resolve, reject) => {
-      zip.on('error', reject).on('ready', () => {
+      zip.on('error', reject);
+      zip.on('ready', () => {
         const files = Object.keys(zip.entries());
         assert.strictEqual(files.length, 2);
         assert.deepStrictEqual(files.sort(), ['index.js', 'package.json']);
@@ -103,8 +84,8 @@ describe('pack & upload', () => {
 
 describe('cloud functions api', () => {
   it('should check to see if the function exists', async () => {
-    const scopes = [mockExists()];
-    const deployer = new gcxp.Deployer({name});
+    const scopes = [mockToken(), mockExists()];
+    const deployer = new gcx.Deployer({name});
     const fullName = `projects/el-gato/locations/us-central1/functions/${name}`;
     const exists = await deployer._exists(fullName);
     assert.strictEqual(exists, true);
@@ -114,25 +95,31 @@ describe('cloud functions api', () => {
 
 describe('end to end', () => {
   it('should deploy end to end', async () => {
-    const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
+    const scopes = [
+      mockToken(),
+      mockUploadUrl(),
+      mockUpload(),
+      mockDeploy(),
+      mockPoll(),
+    ];
     const projectId = 'el-gato';
-    const deployer = new gcxp.Deployer({name, targetDir, projectId});
+    const deployer = new gcx.Deployer({name, targetDir, projectId});
     await deployer.deploy();
     scopes.forEach(s => s.done());
   });
 
   it('should call end to end', async () => {
-    const scopes = [mockCall()];
-    const c = new gcxp.Caller();
+    const scopes = [mockToken(), mockCall()];
+    const c = new gcx.Caller();
     const res = await c.call({functionName: name});
     assert.strictEqual(res.data.result, '{ "data": 42 }');
     scopes.forEach(s => s.done());
   });
 
   it('should call end to end with data', async () => {
-    const scopes = [mockCallWithData()];
-    const c = new gcxp.Caller();
-    const res = await c.call({functionName: name, data: 142});
+    const scopes = [mockToken(), mockCallWithData()];
+    const c = new gcx.Caller();
+    const res = await c.call({functionName: name, data: '142'});
     assert.strictEqual(res.data.result, '{ "data": 142 }');
     scopes.forEach(s => s.done());
   });
@@ -173,6 +160,12 @@ function mockExists() {
   return nock('https://cloudfunctions.googleapis.com')
     .get('/v1/projects/el-gato/locations/us-central1/functions/%F0%9F%A6%84')
     .reply(200);
+}
+
+function mockToken() {
+  return nock('https://oauth2.googleapis.com').post('/token').reply(200, {
+    access_token: 'not-a-real-token',
+  });
 }
 
 /**

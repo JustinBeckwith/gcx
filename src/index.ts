@@ -1,23 +1,16 @@
-import * as archiver from 'archiver';
+import archiver from 'archiver';
 import {EventEmitter} from 'events';
-import * as fs from 'fs';
+import fs from 'fs';
 // eslint-disable-next-line node/no-extraneous-import
 import {GaxiosResponse} from 'gaxios';
-import globby = require('globby');
+import {globby} from 'globby';
 // eslint-disable-next-line node/no-extraneous-import
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
 import {cloudfunctions_v1, google} from 'googleapis';
 import fetch from 'node-fetch';
-import * as os from 'os';
-import * as path from 'path';
-import * as util from 'util';
-import * as uuid from 'uuid';
-
-const readFile = util.promisify(fs.readFile);
-
-interface Bag<T = {}> {
-  [index: string]: T;
-}
+import os from 'os';
+import path from 'path';
+import {v4 as uuid} from 'uuid';
 
 export enum ProgressEvent {
   STARTING = 'STARTING',
@@ -188,7 +181,7 @@ export class Deployer extends GCXClient {
       'triggerHTTP',
       'triggerBucket',
       'triggerTopic',
-    ].filter(prop => !!(options as {} as Bag)[prop]).length;
+    ].filter(prop => !!(options as {} as Record<string, {}>)[prop]).length;
     if (triggerCount > 1) {
       throw new Error('At most 1 trigger may be defined.');
     }
@@ -273,7 +266,7 @@ export class Deployer extends GCXClient {
   async _pack(): Promise<string> {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<string>(async (resolve, reject) => {
-      const zipPath = path.join(os.tmpdir(), uuid.v4()) + '.zip';
+      const zipPath = path.join(os.tmpdir(), uuid()) + '.zip';
       const output = fs.createWriteStream(zipPath);
       const archive = archiver('zip');
       output.on('close', () => resolve(zipPath));
@@ -301,7 +294,7 @@ export class Deployer extends GCXClient {
     const ignoreFile = path.join(this._options.targetDir!, '.gcloudignore');
     let ignoreRules = new Array<string>();
     try {
-      const contents = await readFile(ignoreFile, 'utf8');
+      const contents = await fs.promises.readFile(ignoreFile, 'utf8');
       ignoreRules = contents.split('\n').filter(line => {
         return !line.startsWith('#') && line.trim() !== '';
       });
