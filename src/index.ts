@@ -52,12 +52,12 @@ export interface DeployerOptions extends GoogleAuthOptions {
  * A generic client for GCX.
  */
 export class GCXClient extends EventEmitter {
-  _auth: GoogleAuth;
+  public auth: GoogleAuth;
   _gcf?: cloudfunctions_v1.Cloudfunctions;
 
   constructor(options?: GoogleAuthOptions) {
     super();
-    this._auth = new GoogleAuth(options);
+    this.auth = new GoogleAuth(options);
   }
 
   /**
@@ -66,8 +66,7 @@ export class GCXClient extends EventEmitter {
    */
   async _getGCFClient() {
     if (!this._gcf) {
-      const auth = await this._auth.getClient();
-      google.options({auth});
+      google.options({auth: this.auth});
       this._gcf = google.cloudfunctions('v1');
     }
     return this._gcf;
@@ -91,7 +90,7 @@ export class Deployer extends GCXClient {
       this._options.targetDir = process.cwd();
     }
     options.scopes = ['https://www.googleapis.com/auth/cloud-platform'];
-    this._auth = new GoogleAuth(options);
+    this.auth = new GoogleAuth(options);
   }
 
   /**
@@ -100,7 +99,7 @@ export class Deployer extends GCXClient {
   async deploy() {
     this.emit(ProgressEvent.STARTING);
     const gcf = await this._getGCFClient();
-    const projectId = await this._auth.getProjectId();
+    const projectId = await this.auth.getProjectId();
     const region = this._options.region || 'us-central1';
     const parent = `projects/${projectId}/locations/${region}`;
     const name = `${parent}/functions/${this._options.name}`;
@@ -316,7 +315,7 @@ export class Caller extends GCXClient {
   async call(options: CallerOptions) {
     this.emit(ProgressEvent.STARTING);
     const gcf = await this._getGCFClient();
-    const projectId = await this._auth.getProjectId();
+    const projectId = await this.auth.getProjectId();
     const region = options.region || 'us-central1';
     const name = `projects/${projectId}/locations/${region}/function/${options.functionName}`;
     const fns = gcf.projects.locations.functions;
