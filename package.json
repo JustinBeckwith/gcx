@@ -38,7 +38,7 @@
     "archiver": "^5.3.0",
     "gaxios": "^5.0.0",
     "globby": "^13.1.1",
-    "googleapis": "^103.0.0",
+    "googleapis": "^104.0.0",
     "meow": "^10.1.2",
     "node-fetch": "^3.2.3",
     "ora": "^6.1.0",
