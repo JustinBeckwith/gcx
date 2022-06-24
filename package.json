@@ -42,7 +42,7 @@
     "meow": "^10.1.2",
     "node-fetch": "^3.2.3",
     "ora": "^6.1.0",
-    "update-notifier": "^5.1.0",
+    "update-notifier": "^6.0.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
