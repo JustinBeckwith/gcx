@@ -40,7 +40,7 @@
     "globby": "^13.1.1",
     "googleapis": "^109.0.0",
     "meow": "^11.0.0",
-    "node-fetch": "~3.1.0",
+    "node-fetch": "~3.2.0",
     "ora": "^6.1.0",
     "update-notifier": "^6.0.0",
     "uuid": "^9.0.0"
