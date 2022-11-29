@@ -40,7 +40,7 @@
     "globby": "^13.1.1",
     "googleapis": "^109.0.0",
     "meow": "^11.0.0",
-    "node-fetch": "~3.1.0",
+    "node-fetch": "^2.0.0",
     "ora": "^6.1.0",
     "update-notifier": "^6.0.0",
     "uuid": "^9.0.0"
@@ -49,6 +49,7 @@
     "@types/archiver": "^5.3.1",
     "@types/mocha": "^10.0.0",
     "@types/node": "^18.0.0",
+    "@types/node-fetch": "^2.6.2",
     "@types/sinon": "^10.0.11",
     "@types/update-notifier": "^6.0.0",
     "@types/uuid": "^9.0.0",
