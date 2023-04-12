@@ -58,7 +58,7 @@
     "mocha": "^10.0.0",
     "nock": "^13.2.4",
     "node-stream-zip": "^1.15.0",
-    "semantic-release": "^20.0.0",
+    "semantic-release": "^21.0.0",
     "sinon": "^15.0.0",
     "typescript": "~5.0.0"
   },
