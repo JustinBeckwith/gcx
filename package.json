@@ -30,7 +30,7 @@
     "serverless"
   ],
   "engines": {
-    "node": ">=12"
+    "node": ">=16"
   },
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
@@ -38,8 +38,8 @@
     "archiver": "^5.3.0",
     "gaxios": "^5.0.0",
     "globby": "^13.1.1",
-    "googleapis": "^114.0.0",
-    "meow": "^11.0.0",
+    "googleapis": "^118.0.0",
+    "meow": "^12.0.0",
     "node-fetch": "^2.0.0",
     "ora": "^6.1.0",
     "update-notifier": "^6.0.0",
@@ -58,7 +58,7 @@
     "mocha": "^10.0.0",
     "nock": "^13.2.4",
     "node-stream-zip": "^1.15.0",
-    "semantic-release": "^20.0.0",
+    "semantic-release": "^21.0.0",
     "sinon": "^15.0.0",
     "typescript": "~5.0.0"
   },
