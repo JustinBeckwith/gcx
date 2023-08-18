@@ -5,6 +5,7 @@ import path from 'path';
 import {describe, it} from 'mocha';
 import Zip from 'node-stream-zip';
 import sinon from 'sinon';
+// eslint-disable-next-line node/no-extraneous-import
 import {GaxiosOptions, request} from 'gaxios';
 
 import * as gcx from '../src/index.js';
