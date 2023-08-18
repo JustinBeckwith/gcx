@@ -1,8 +1,6 @@
 import archiver from 'archiver';
 import {EventEmitter} from 'events';
 import fs from 'fs';
-// eslint-disable-next-line node/no-extraneous-import
-import {GaxiosResponse} from 'gaxios';
 import {globby} from 'globby';
 // eslint-disable-next-line node/no-extraneous-import
 import {GoogleAuth, GoogleAuthOptions} from 'google-auth-library';
@@ -113,14 +111,15 @@ export class Deployer extends GCXClient {
     this.emit(ProgressEvent.DEPLOYING);
     const body = this._buildRequest(parent, sourceUploadUrl);
     const exists = await this._exists(name);
-    let result: GaxiosResponse<cloudfunctions_v1.Schema$Operation>;
+    let operation: cloudfunctions_v1.Schema$Operation;
     if (exists) {
       const updateMask = this._getUpdateMask();
-      result = await fns.patch({name, updateMask, requestBody: body});
+      const result = await fns.patch({name, updateMask, requestBody: body});
+      operation = result.data;
     } else {
-      result = await fns.create({location: parent, requestBody: body});
+      const result = await fns.create({location: parent, requestBody: body});
+      operation = result.data;
     }
-    const operation = result.data;
     await this._poll(operation.name!);
     this.emit(ProgressEvent.COMPLETE);
   }
