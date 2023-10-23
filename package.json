@@ -15,9 +15,9 @@
   "repository": "JustinBeckwith/gcx",
   "scripts": {
     "test": "c8 mocha build/test",
-    "lint": "gts check",
+    "lint": "xo --prettier",
     "compile": "tsc -p .",
-    "fix": "gts fix",
+    "fix": "xo --fix --prettier",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "watch": "tsc -p . --watch",
@@ -38,8 +38,8 @@
     "archiver": "^6.0.0",
     "globby": "^13.1.1",
     "googleapis": "^126.0.0",
-    "meow": "^12.0.0",
-    "node-fetch": "^2.0.0",
+    "meow": "^12.1.1",
+    "node-fetch": "^3.3.2",
     "ora": "^7.0.0",
     "update-notifier": "^6.0.0",
     "uuid": "^9.0.0"
@@ -48,22 +48,27 @@
     "@types/archiver": "^5.3.1",
     "@types/mocha": "^10.0.0",
     "@types/node": "^18.0.0",
-    "@types/node-fetch": "^2.6.2",
     "@types/sinon": "^10.0.11",
     "@types/update-notifier": "^6.0.0",
     "@types/uuid": "^9.0.0",
     "c8": "^8.0.0",
-    "gts": "^5.0.0",
     "mocha": "^10.0.0",
     "nock": "^13.2.4",
     "node-stream-zip": "^1.15.0",
     "semantic-release": "^21.0.0",
     "sinon": "^15.0.0",
-    "typescript": "~5.2.0"
+    "typescript": "~5.2.2",
+    "xo": "^0.56.0"
   },
   "c8": {
     "exclude": [
       "build/test"
     ]
+  },
+  "xo": {
+    "rules": {
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/member-ordering": "off"
+    }
   }
 }
