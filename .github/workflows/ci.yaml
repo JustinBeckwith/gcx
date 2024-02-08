@@ -20,7 +20,7 @@ jobs:
       - run: npm test
       - run: npm run coverage
         if: matrix.node == 18
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         if: matrix.node == 18
         with:
           fail_ci_if_error: false
