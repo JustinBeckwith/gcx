@@ -35,7 +35,7 @@
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "archiver": "^6.0.0",
+    "archiver": "^7.0.0",
     "globby": "^14.0.0",
     "googleapis": "^133.0.0",
     "meow": "^13.0.0",
