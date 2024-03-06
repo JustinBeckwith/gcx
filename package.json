@@ -57,7 +57,7 @@
     "node-stream-zip": "^1.15.0",
     "semantic-release": "^23.0.0",
     "sinon": "^17.0.0",
-    "typescript": "~5.3.0",
+    "typescript": "~5.4.0",
     "xo": "^0.56.0"
   },
   "c8": {
