@@ -19,6 +19,8 @@ describe('gcx', () => {
 
 	const name = '🦄';
 	const projectId = 'el-gato';
+
+	// eslint-disable-next-line unicorn/prevent-abbreviations
 	const targetDir = path.resolve('test/fixtures/');
 	const gcloudignore = path.resolve('test/fixtures/.gcloudignore');
 

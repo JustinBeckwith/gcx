@@ -8,10 +8,10 @@ import updateNotifier, {type Package} from 'update-notifier';
 import meow from 'meow';
 import {Deployer, type DeployerOptions, ProgressEvent} from './index.js';
 
-const pkg = JSON.parse(
+const package_ = JSON.parse(
 	fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
 ) as Package;
-updateNotifier({pkg}).notify();
+updateNotifier({pkg: package_}).notify();
 
 const cli = meow(
 	`
@@ -166,10 +166,10 @@ async function main() {
 			const start = Date.now();
 			const options = cli.flags as unknown as DeployerOptions;
 			options.name = cli.input[1];
-			const targetDir = options.targetDir || process.cwd();
-			const hasIgnore = await hasIgnoreFile(targetDir);
+			const targetDirectory = options.targetDir || process.cwd();
+			const hasIgnore = await hasIgnoreFile(targetDirectory);
 			if (!hasIgnore) {
-				await generateIgnoreFile(targetDir);
+				await generateIgnoreFile(targetDirectory);
 			}
 
 			const spinny = ora('Initializing deployment...').start();
@@ -213,7 +213,7 @@ async function main() {
 	}
 }
 
-async function generateIgnoreFile(targetDir: string) {
+async function generateIgnoreFile(targetDirectory: string) {
 	console.log(`
     🤖 I generated a '.gcloudignore' file in the target directory.
        This file contains a list of glob patterns that should be ingored
@@ -222,7 +222,7 @@ async function generateIgnoreFile(targetDir: string) {
 	await new Promise((resolve, reject) => {
 		// eslint-disable-next-line unicorn/prefer-module
 		fs.createReadStream(path.join(__dirname, '../../src/.gcloudignore'))
-			.pipe(fs.createWriteStream(path.join(targetDir, '.gcloudignore')))
+			.pipe(fs.createWriteStream(path.join(targetDirectory, '.gcloudignore')))
 			.on('error', reject)
 			.on('close', resolve);
 	});
@@ -232,8 +232,8 @@ async function generateIgnoreFile(targetDir: string) {
  * Checks to see if a given directory has a `.gcloudignore` file.
  * @param targetDir The directory with the sources to deploy.
  */
-async function hasIgnoreFile(targetDir: string) {
-	const ignoreFile = path.join(targetDir, '.gcloudignore');
+async function hasIgnoreFile(targetDirectory: string) {
+	const ignoreFile = path.join(targetDirectory, '.gcloudignore');
 	try {
 		await util.promisify(fs.stat)(ignoreFile);
 		return true;
