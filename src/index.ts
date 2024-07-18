@@ -1,15 +1,15 @@
-import {EventEmitter} from 'node:events';
+import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import archiver from 'archiver';
-import {globby} from 'globby';
+import { globby } from 'globby';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import {GoogleAuth, type GoogleAuthOptions} from 'google-auth-library';
-import {type cloudfunctions_v1, google} from 'googleapis';
+import { GoogleAuth, type GoogleAuthOptions } from 'google-auth-library';
+import { type cloudfunctions_v1, google } from 'googleapis';
 import fetch from 'node-fetch';
-import {v4 as uuid} from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 export enum ProgressEvent {
 	STARTING = 'STARTING',
@@ -67,7 +67,7 @@ export class GCXClient extends EventEmitter {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	async _getGCFClient() {
 		if (!this._gcf) {
-			google.options({auth: this.auth});
+			google.options({ auth: this.auth });
 			this._gcf = google.cloudfunctions('v1');
 		}
 
@@ -108,7 +108,7 @@ export class Deployer extends GCXClient {
 		const parent = `projects/${projectId}/locations/${region}`;
 		const name = `${parent}/functions/${this._options.name}`;
 		const fns = gcf.projects.locations.functions;
-		const response = await fns.generateUploadUrl({parent});
+		const response = await fns.generateUploadUrl({ parent });
 		const sourceUploadUrl = response.data.uploadUrl;
 		if (!sourceUploadUrl) {
 			throw new Error('Source Upload URL not available.');
@@ -124,14 +124,18 @@ export class Deployer extends GCXClient {
 		let operation: cloudfunctions_v1.Schema$Operation;
 		if (exists) {
 			const updateMask = this._getUpdateMask();
-			const result = await fns.patch({name, updateMask, requestBody: body});
+			const result = await fns.patch({ name, updateMask, requestBody: body });
 			operation = result.data;
 		} else {
-			const result = await fns.create({location: parent, requestBody: body});
+			const result = await fns.create({ location: parent, requestBody: body });
 			operation = result.data;
 		}
 
-		await this._poll(operation.name!);
+		if (operation.name == null) {
+			throw new Error('Operation name not available.');
+		}
+
+		await this._poll(operation.name);
 		this.emit(ProgressEvent.COMPLETE);
 	}
 
@@ -142,7 +146,7 @@ export class Deployer extends GCXClient {
 	 */
 	async _poll(name: string) {
 		const gcf = await this._getGCFClient();
-		const response = await gcf.operations.get({name});
+		const response = await gcf.operations.get({ name });
 		const operation = response.data;
 		if (operation.error) {
 			const message = JSON.stringify(operation.error);
@@ -191,12 +195,14 @@ export class Deployer extends GCXClient {
 		if (!options.name) {
 			throw new Error('The `name` option is required.');
 		}
-
-		const triggerCount = [
+		const trigggerProps: Array<keyof DeployerOptions> = [
 			'triggerHTTP',
 			'triggerBucket',
 			'triggerTopic',
-		].filter((property) => Boolean((options as any)[property])).length;
+		];
+		const triggerCount = trigggerProps.filter((property) =>
+			Boolean(options[property]),
+		).length;
 		if (triggerCount > 1) {
 			throw new Error('At most 1 trigger may be defined.');
 		}
@@ -250,7 +256,7 @@ export class Deployer extends GCXClient {
 	async _exists(name: string) {
 		const gcf = await this._getGCFClient();
 		try {
-			await gcf.projects.locations.functions.get({name});
+			await gcf.projects.locations.functions.get({ name });
 			return true;
 		} catch {
 			return false;
@@ -280,9 +286,9 @@ export class Deployer extends GCXClient {
 	 * @private
 	 */
 	async _pack(): Promise<string> {
-		// eslint-disable-next-line no-async-promise-executor
+		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
 		return new Promise<string>(async (resolve, reject) => {
-			const zipPath = path.join(os.tmpdir(), uuid()) + '.zip';
+			const zipPath = `${path.join(os.tmpdir(), uuid())}.zip`;
 			const output = fs.createWriteStream(zipPath);
 			const archive = archiver('zip');
 			output.on('close', () => {
@@ -296,8 +302,11 @@ export class Deployer extends GCXClient {
 				cwd: this._options.targetDir,
 			});
 			for (const f of files) {
-				const fullPath = path.join(this._options.targetDir!, f);
-				archive.append(fs.createReadStream(fullPath), {name: f});
+				if (this._options.targetDir == null) {
+					throw new Error('targetDir is required');
+				}
+				const fullPath = path.join(this._options.targetDir, f);
+				archive.append(fs.createReadStream(fullPath), { name: f });
 			}
 
 			await archive.finalize();
@@ -310,7 +319,10 @@ export class Deployer extends GCXClient {
 	 * @private
 	 */
 	async _getIgnoreRules() {
-		const ignoreFile = path.join(this._options.targetDir!, '.gcloudignore');
+		if (this._options.targetDir == null) {
+			throw new Error('targetDir is required');
+		}
+		const ignoreFile = path.join(this._options.targetDir, '.gcloudignore');
 		let ignoreRules = new Array<string>();
 		try {
 			const contents = await fs.promises.readFile(ignoreFile, 'utf8');

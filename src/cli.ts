@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-import util from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import ora from 'ora';
-import updateNotifier, {type Package} from 'update-notifier';
+import util from 'node:util';
 import meow from 'meow';
-import {Deployer, type DeployerOptions, ProgressEvent} from './index.js';
+import ora from 'ora';
+import updateNotifier, { type Package } from 'update-notifier';
+import { Deployer, type DeployerOptions, ProgressEvent } from './index.js';
 
 const package_ = JSON.parse(
 	fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
 ) as Package;
-updateNotifier({pkg: package_}).notify();
+updateNotifier({ pkg: package_ }).notify();
 
 const cli = meow(
 	`
@@ -133,24 +133,24 @@ const cli = meow(
 	{
 		importMeta: import.meta,
 		flags: {
-			description: {type: 'string'},
-			entryPoint: {type: 'string'},
-			runtime: {type: 'string'},
-			timeout: {type: 'string'},
-			network: {type: 'string'},
-			retry: {type: 'boolean'},
-			memory: {type: 'string'},
-			project: {type: 'string'},
-			projectId: {type: 'string'},
-			triggerBucket: {type: 'string'},
-			triggerHttp: {type: 'boolean'},
-			triggerTopic: {type: 'string'},
-			triggerResource: {type: 'string'},
-			triggerEvent: {type: 'string'},
-			targetDir: {type: 'string'},
-			region: {type: 'string'},
-			maxInstances: {type: 'string'},
-			vpcConnector: {type: 'string'},
+			description: { type: 'string' },
+			entryPoint: { type: 'string' },
+			runtime: { type: 'string' },
+			timeout: { type: 'string' },
+			network: { type: 'string' },
+			retry: { type: 'boolean' },
+			memory: { type: 'string' },
+			project: { type: 'string' },
+			projectId: { type: 'string' },
+			triggerBucket: { type: 'string' },
+			triggerHttp: { type: 'boolean' },
+			triggerTopic: { type: 'string' },
+			triggerResource: { type: 'string' },
+			triggerEvent: { type: 'string' },
+			targetDir: { type: 'string' },
+			region: { type: 'string' },
+			maxInstances: { type: 'string' },
+			vpcConnector: { type: 'string' },
 		},
 	},
 );
