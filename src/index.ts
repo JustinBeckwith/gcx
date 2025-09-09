@@ -5,7 +5,6 @@ import path from 'node:path';
 import process from 'node:process';
 import archiver from 'archiver';
 import { globby } from 'globby';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { GoogleAuth, type GoogleAuthOptions } from 'google-auth-library';
 import { type cloudfunctions_v1, google } from 'googleapis';
 import fetch from 'node-fetch';
@@ -50,7 +49,6 @@ export type DeployerOptions = {
 /**
  * A generic client for GCX.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention, unicorn/prefer-event-target
 export class GCXClient extends EventEmitter {
 	public auth: GoogleAuth;
 	_gcf?: cloudfunctions_v1.Cloudfunctions;
@@ -286,7 +284,7 @@ export class Deployer extends GCXClient {
 	 * @private
 	 */
 	async _pack(): Promise<string> {
-		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: it needs to be async
 		return new Promise<string>(async (resolve, reject) => {
 			const zipPath = `${path.join(os.tmpdir(), uuid())}.zip`;
 			const output = fs.createWriteStream(zipPath);
@@ -323,7 +321,7 @@ export class Deployer extends GCXClient {
 			throw new Error('targetDir is required');
 		}
 		const ignoreFile = path.join(this._options.targetDir, '.gcloudignore');
-		let ignoreRules = new Array<string>();
+		let ignoreRules: string[] = [];
 		try {
 			const contents = await fs.promises.readFile(ignoreFile, 'utf8');
 			ignoreRules = contents.split('\n').filter((line) => {

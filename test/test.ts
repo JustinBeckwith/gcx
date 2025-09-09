@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { type GaxiosOptions, request } from 'gaxios';
 import { describe, it } from 'mocha';
 import nock from 'nock';
@@ -20,7 +19,6 @@ describe('gcx', () => {
 	const name = '🦄';
 	const projectId = 'el-gato';
 
-	// eslint-disable-next-line unicorn/prevent-abbreviations
 	const targetDir = path.resolve('test/fixtures/');
 	const gcloudignore = path.resolve('test/fixtures/.gcloudignore');
 
@@ -101,7 +99,7 @@ describe('gcx', () => {
 				async request(options: GaxiosOptions) {
 					return request(options);
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
 			} as any);
 			const exists = await deployer._exists(fullName);
 			assert.strictEqual(exists, true);
@@ -120,7 +118,7 @@ describe('gcx', () => {
 				async request(options: GaxiosOptions) {
 					return request(options);
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
 			} as any);
 			await deployer.deploy();
 			for (const s of scopes) {
@@ -136,7 +134,7 @@ describe('gcx', () => {
 				async request(options: GaxiosOptions) {
 					return request(options);
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
 			} as any);
 			const response = await c.call({ functionName: name });
 			assert.strictEqual(response.data.result, '{ "data": 42 }');
@@ -153,7 +151,7 @@ describe('gcx', () => {
 				async request(options: GaxiosOptions) {
 					return request(options);
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
 			} as any);
 			const response = await c.call({ functionName: name, data: '142' });
 			assert.strictEqual(response.data.result, '{ "data": 142 }');
