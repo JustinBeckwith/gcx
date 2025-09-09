@@ -42,7 +42,7 @@
     "node-fetch": "^3.3.2",
     "ora": "^8.0.0",
     "update-notifier": "^7.0.0",
-    "uuid": "^11.0.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",
