@@ -30,7 +30,7 @@
     "serverless"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=20"
   },
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
