@@ -29,12 +29,7 @@ describe('cli', () => {
 
 	describe('Deployment with events', () => {
 		it('should emit progress events during deployment', async () => {
-			const scopes = [
-				mockUploadUrl(),
-				mockUpload(),
-				mockDeploy(),
-				mockPoll(),
-			];
+			const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
 
 			const deployer = new Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);

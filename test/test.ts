@@ -331,18 +331,17 @@ describe('gcx', () => {
 				},
 				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
 			} as any);
-			await assert.rejects(deployer.deploy(), /Source Upload URL not available/);
+			await assert.rejects(
+				deployer.deploy(),
+				/Source Upload URL not available/,
+			);
 			for (const s of scopes) {
 				s.done();
 			}
 		});
 
 		it('should throw error if operation name is not available', async () => {
-			const scopes = [
-				mockUploadUrl(),
-				mockUpload(),
-				mockDeployNoOperation(),
-			];
+			const scopes = [mockUploadUrl(), mockUpload(), mockDeployNoOperation()];
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
 			sinon.stub(deployer.auth, 'getClient').resolves({
