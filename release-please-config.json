@@ -1,0 +1,12 @@
+{
+  "packages": {
+    ".": {
+      "package-name": "gcx",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node",
+      "extra-files": [
+        "package.json"
+      ]
+    }
+  }
+}
