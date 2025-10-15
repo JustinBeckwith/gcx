@@ -39,7 +39,7 @@
     "globby": "^15.0.0",
     "googleapis": "^144.0.0",
     "meow": "^13.0.0",
-    "ora": "^8.0.0",
+    "ora": "^9.0.0",
     "update-notifier": "^7.0.0"
   },
   "devDependencies": {
