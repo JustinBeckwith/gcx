@@ -38,7 +38,7 @@
     "archiver": "^7.0.0",
     "globby": "^15.0.0",
     "googleapis": "^163.0.0",
-    "meow": "^13.0.0",
+    "meow": "^14.0.0",
     "ora": "^9.0.0",
     "update-notifier": "^7.0.0"
   },
