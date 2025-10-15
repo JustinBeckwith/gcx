@@ -107,11 +107,151 @@ describe('gcx', () => {
 				s.done();
 			}
 		});
+
+		it('should return false if function does not exist', async () => {
+			const scopes = [mockNotExists()];
+			const deployer = new gcx.Deployer({ name });
+			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			sinon.stub(deployer.auth, 'getClient').resolves({
+				async request(options: GaxiosOptions) {
+					return request(options);
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
+			} as any);
+			const exists = await deployer._exists(fullName);
+			assert.strictEqual(exists, false);
+			for (const s of scopes) {
+				s.done();
+			}
+		});
+	});
+
+	describe('_getUpdateMask', () => {
+		it('should return sourceUploadUrl by default', () => {
+			const deployer = new gcx.Deployer({ name });
+			const mask = deployer._getUpdateMask();
+			assert.strictEqual(mask, 'sourceUploadUrl');
+		});
+
+		it('should include all specified options', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				memory: 512,
+				description: 'test description',
+				entryPoint: 'myFunction',
+				maxInstances: 10,
+				vpcConnector: 'my-connector',
+				network: 'my-network',
+				runtime: 'nodejs20',
+				timeout: '60s',
+				triggerHTTP: true,
+			});
+			const mask = deployer._getUpdateMask();
+			assert.ok(mask.includes('availableMemoryMb'));
+			assert.ok(mask.includes('description'));
+			assert.ok(mask.includes('entryPoint'));
+			assert.ok(mask.includes('maxInstances'));
+			assert.ok(mask.includes('vpcConnector'));
+			assert.ok(mask.includes('network'));
+			assert.ok(mask.includes('runtime'));
+			assert.ok(mask.includes('timeout'));
+			assert.ok(mask.includes('httpsTrigger'));
+		});
+
+		it('should include eventTrigger fields for bucket trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerBucket: 'my-bucket',
+			});
+			const mask = deployer._getUpdateMask();
+			assert.ok(mask.includes('eventTrigger.eventType'));
+			assert.ok(mask.includes('eventTrigger.resource'));
+		});
+
+		it('should include eventTrigger fields for topic trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerTopic: 'my-topic',
+			});
+			const mask = deployer._getUpdateMask();
+			assert.ok(mask.includes('eventTrigger.eventType'));
+			assert.ok(mask.includes('eventTrigger.resource'));
+		});
+	});
+
+	describe('_buildRequest', () => {
+		it('should build request with topic trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerTopic: 'my-topic',
+			});
+			const request = deployer._buildRequest('parent-path', 'upload-url');
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(
+				request.eventTrigger?.eventType,
+				'providers/cloud.pubsub/eventTypes/topic.publish',
+			);
+			assert.strictEqual(request.eventTrigger?.resource, 'my-topic');
+		});
+
+		it('should build request with bucket trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerBucket: 'my-bucket',
+			});
+			const request = deployer._buildRequest('parent-path', 'upload-url');
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(
+				request.eventTrigger?.eventType,
+				'providers/cloud.storage/eventTypes/object.change',
+			);
+			assert.strictEqual(request.eventTrigger?.resource, 'my-bucket');
+		});
+
+		it('should build request with custom trigger event', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerBucket: 'my-bucket',
+				triggerEvent: 'custom.event.type',
+			});
+			const request = deployer._buildRequest('parent-path', 'upload-url');
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(request.eventTrigger?.eventType, 'custom.event.type');
+		});
+
+		it('should build request with HTTP trigger by default', () => {
+			const deployer = new gcx.Deployer({ name });
+			const request = deployer._buildRequest('parent-path', 'upload-url');
+			assert.ok(request.httpsTrigger);
+		});
 	});
 
 	describe('end to end', () => {
 		it('should deploy end to end', async () => {
 			const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
+			const deployer = new gcx.Deployer({ name, targetDir, projectId });
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			sinon.stub(deployer.auth, 'getClient').resolves({
+				async request(options: GaxiosOptions) {
+					return request(options);
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
+			} as any);
+			await deployer.deploy();
+			for (const s of scopes) {
+				s.done();
+			}
+		});
+
+		it('should update existing function', async () => {
+			const scopes = [
+				mockUploadUrl(),
+				mockUpload(),
+				mockExists(),
+				mockUpdate(),
+				mockPoll(),
+			];
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
 			sinon.stub(deployer.auth, 'getClient').resolves({
@@ -159,6 +299,62 @@ describe('gcx', () => {
 				s.done();
 			}
 		});
+
+		it('should handle poll errors', async () => {
+			const scopes = [
+				mockUploadUrl(),
+				mockUpload(),
+				mockDeploy(),
+				mockPollError(),
+			];
+			const deployer = new gcx.Deployer({ name, targetDir, projectId });
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			sinon.stub(deployer.auth, 'getClient').resolves({
+				async request(options: GaxiosOptions) {
+					return request(options);
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
+			} as any);
+			await assert.rejects(deployer.deploy(), /operation failed/);
+			for (const s of scopes) {
+				s.done();
+			}
+		});
+
+		it('should throw error if sourceUploadUrl is not available', async () => {
+			const scopes = [mockUploadUrlEmpty()];
+			const deployer = new gcx.Deployer({ name, targetDir, projectId });
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			sinon.stub(deployer.auth, 'getClient').resolves({
+				async request(options: GaxiosOptions) {
+					return request(options);
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
+			} as any);
+			await assert.rejects(
+				deployer.deploy(),
+				/Source Upload URL not available/,
+			);
+			for (const s of scopes) {
+				s.done();
+			}
+		});
+
+		it('should throw error if operation name is not available', async () => {
+			const scopes = [mockUploadUrl(), mockUpload(), mockDeployNoOperation()];
+			const deployer = new gcx.Deployer({ name, targetDir, projectId });
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			sinon.stub(deployer.auth, 'getClient').resolves({
+				async request(options: GaxiosOptions) {
+					return request(options);
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
+			} as any);
+			await assert.rejects(deployer.deploy(), /Operation name not available/);
+			for (const s of scopes) {
+				s.done();
+			}
+		});
 	});
 
 	function mockUpload() {
@@ -180,10 +376,32 @@ describe('gcx', () => {
 			.reply(200, { uploadUrl: 'https://fake.local' });
 	}
 
+	function mockUploadUrlEmpty() {
+		return nock('https://cloudfunctions.googleapis.com')
+			.post(
+				`/v1/projects/${projectId}/locations/us-central1/functions:generateUploadUrl`,
+			)
+			.reply(200, {});
+	}
+
 	function mockDeploy() {
 		return nock('https://cloudfunctions.googleapis.com')
 			.post(`/v1/projects/${projectId}/locations/us-central1/functions`)
 			.reply(200, { name: 'not-a-real-operation' });
+	}
+
+	function mockUpdate() {
+		return nock('https://cloudfunctions.googleapis.com')
+			.patch(
+				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84?updateMask=sourceUploadUrl`,
+			)
+			.reply(200, { name: 'not-a-real-operation' });
+	}
+
+	function mockDeployNoOperation() {
+		return nock('https://cloudfunctions.googleapis.com')
+			.post(`/v1/projects/${projectId}/locations/us-central1/functions`)
+			.reply(200, {});
 	}
 
 	function mockPoll() {
@@ -192,12 +410,29 @@ describe('gcx', () => {
 			.reply(200, { done: true });
 	}
 
+	function mockPollError() {
+		return nock('https://cloudfunctions.googleapis.com')
+			.get('/v1/not-a-real-operation')
+			.reply(200, {
+				done: true,
+				error: { message: 'operation failed', code: 500 },
+			});
+	}
+
 	function mockExists() {
 		return nock('https://cloudfunctions.googleapis.com')
 			.get(
 				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84`,
 			)
 			.reply(200);
+	}
+
+	function mockNotExists() {
+		return nock('https://cloudfunctions.googleapis.com')
+			.get(
+				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84`,
+			)
+			.reply(404);
 	}
 
 	/**
