@@ -1,14 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { Readable } from 'node:stream';
 import archiver from 'archiver';
 import { globby } from 'globby';
 import { GoogleAuth, type GoogleAuthOptions } from 'google-auth-library';
 import { type cloudfunctions_v1, google } from 'googleapis';
-import fetch from 'node-fetch';
-import { v4 as uuid } from 'uuid';
 
 export enum ProgressEvent {
 	STARTING = 'STARTING',
@@ -269,14 +269,16 @@ export class Deployer extends GCXClient {
 	 */
 	async _upload(localPath: string, remotePath: string) {
 		const stream = fs.createReadStream(localPath);
-		await fetch(remotePath, {
+		const options: RequestInit & { duplex: 'half' } = {
 			method: 'PUT',
-			body: stream,
+			body: Readable.toWeb(stream) as ReadableStream,
+			duplex: 'half',
 			headers: {
 				'Content-Type': 'application/zip',
 				'x-goog-content-length-range': '0,104857600',
 			},
-		});
+		};
+		await fetch(remotePath, options);
 	}
 
 	/**
@@ -286,7 +288,7 @@ export class Deployer extends GCXClient {
 	async _pack(): Promise<string> {
 		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: it needs to be async
 		return new Promise<string>(async (resolve, reject) => {
-			const zipPath = `${path.join(os.tmpdir(), uuid())}.zip`;
+			const zipPath = `${path.join(os.tmpdir(), randomUUID())}.zip`;
 			const output = fs.createWriteStream(zipPath);
 			const archive = archiver('zip');
 			output.on('close', () => {

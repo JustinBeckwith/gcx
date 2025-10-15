@@ -39,10 +39,8 @@
     "globby": "^14.0.0",
     "googleapis": "^144.0.0",
     "meow": "^13.0.0",
-    "node-fetch": "^3.3.2",
     "ora": "^8.0.0",
-    "update-notifier": "^7.0.0",
-    "uuid": "^13.0.0"
+    "update-notifier": "^7.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",
@@ -51,10 +49,9 @@
     "@types/node": "^22.0.0",
     "@types/sinon": "^17.0.0",
     "@types/update-notifier": "^6.0.0",
-    "@types/uuid": "^10.0.0",
     "c8": "^10.0.0",
     "mocha": "^11.0.0",
-    "nock": "^13.2.4",
+    "nock": "^14.0.0",
     "node-stream-zip": "^1.15.0",
     "sinon": "^21.0.0",
     "typescript": "~5.9.0"
