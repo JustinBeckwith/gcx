@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.0.0...gcx-v3.0.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency googleapis to v164 ([#332](https://github.com/JustinBeckwith/gcx/issues/332)) ([f104729](https://github.com/JustinBeckwith/gcx/commit/f104729d3e2b7098f0264639be4b6e59641ee5bf))
+
 ## [3.0.0](https://github.com/JustinBeckwith/gcx/compare/gcx-v2.0.29...gcx-v3.0.0) (2025-10-15)
 
 
