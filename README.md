@@ -1,6 +1,6 @@
 # gcx
 
-> An API and CLI for deploying and calling Google Cloud Functions in Node.js.
+> An API and CLI for deploying and calling Google Cloud Functions (1st gen and 2nd gen) in Node.js.
 
 [![NPM Version](https://img.shields.io/npm/v/gcx.svg)](https://npmjs.org/package/gcx)
 [![Build Status](https://github.com/JustinBeckwith/gcx/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/JustinBeckwith/gcx/actions)
@@ -47,19 +47,25 @@ The cloud region for the function.  Defaults to `us-central1`.
 
 #### --runtime
 
-The runtime in which to run the function. Defaults to nodejs14.
+The runtime in which to run the function. Defaults to `nodejs20` for both 1st gen and 2nd gen functions.
 
-- nodejs10: Node.js 10
-- nodejs12: Node.js 12
-- nodejs14: Node.js 14
-- python37: Python 3.7
-- python38: Python 3.8
-- python39: Python 3.9
-- go111: Go 1.11
-- go113: Go 1.13
-- java11: Java 11
-- dotnet3: .NET Framework 3
-- ruby26: Ruby 2.6
+Supported runtimes:
+
+- nodejs20: Node.js 20 (Recommended)
+- nodejs22: Node.js 22 (2nd gen only)
+- nodejs24: Node.js 24 (2nd gen preview)
+- nodejs18: Node.js 18
+- nodejs16: Node.js 16
+- nodejs14: Node.js 14 (legacy)
+- python312: Python 3.12
+- python311: Python 3.11
+- python310: Python 3.10
+- go121: Go 1.21
+- go122: Go 1.22
+- java17: Java 17
+- java21: Java 21
+- dotnet8: .NET 8
+- ruby33: Ruby 3.3
 
 #### --retry
 
@@ -141,36 +147,136 @@ same organization. The format of this field is either
 #### --max-instances
 
 The limit on the maximum number of function instances that may coexist
-at a given time. This feature is currently in alpha, available only
-for whitelisted users.
+at a given time.
+
+#### --allow-unauthenticated
+
+Allow unauthenticated invocations of the function. This will set the IAM policy to allow `allUsers` to invoke the function, making it publicly accessible without authentication. Requires the `cloudfunctions.functions.setIamPolicy` permission. Typically used for public HTTP APIs.
+
+### Cloud Functions (2nd gen) Specific Flags
+
+#### --gen2
+
+Deploy as a Cloud Functions (2nd gen) function. This enables access to additional features like concurrency, longer timeouts, traffic splitting, and min instances. 2nd gen functions run on Cloud Run infrastructure.
+
+#### --min-instances
+
+The minimum number of function instances that may exist at a given time. This helps reduce cold start latency by keeping instances warm. Only available for 2nd gen functions.
+
+#### --concurrency
+
+The maximum number of concurrent requests that each function instance can handle. Defaults to 1. Setting this higher allows a single instance to process multiple requests simultaneously, reducing costs and improving performance. Only available for 2nd gen functions.
+
+#### --cpu
+
+The amount of CPU to allocate to each function instance (e.g., '1' for 1 vCPU, '0.5' for half a vCPU). Only available for 2nd gen functions.
+
+#### --ingress-settings
+
+Controls what traffic can reach the function. Options:
+
+- `ALLOW_ALL`: Allow all traffic (default)
+- `ALLOW_INTERNAL_ONLY`: Allow only internal traffic
+- `ALLOW_INTERNAL_AND_GCLB`: Allow internal traffic and traffic from Google Cloud Load Balancer
+
+Only available for 2nd gen functions.
+
+#### --vpc-connector-egress-settings
+
+Controls which traffic uses the VPC connector. Options:
+
+- `PRIVATE_RANGES_ONLY`: Only private IP ranges use the VPC connector (default)
+- `ALL_TRAFFIC`: All traffic uses the VPC connector
+
+Only available for 2nd gen functions.
+
+#### --service-account
+
+The email address of the IAM service account to use for both the build process and runtime execution. Only available for 2nd gen functions.
 
 ### Examples
 
 ```sh
-# Deploy a new function
-$ gcx deploy myhook --runtime nodejs14 --trigger-http
+# Deploy a 1st gen HTTP function
+$ gcx deploy my-function --runtime nodejs20 --trigger-http
 
-# Update the same function with new source code
-$ gcx deploy myhook
+# Deploy a public HTTP function (no authentication required)
+$ gcx deploy my-function --trigger-http --allow-unauthenticated
+
+# Deploy a 2nd gen HTTP function with concurrency
+$ gcx deploy my-function --gen2 --runtime nodejs22 --trigger-http --concurrency 10
+
+# Deploy a 2nd gen function with min instances to reduce cold starts
+$ gcx deploy my-function --gen2 --trigger-http --min-instances 1 --max-instances 10
+
+# Deploy a 2nd gen Pub/Sub function
+$ gcx deploy my-function --gen2 --trigger-topic my-topic --runtime python312
+
+# Deploy a 2nd gen Storage function
+$ gcx deploy my-function --gen2 --trigger-bucket my-bucket --runtime go122
+
+# Deploy with custom service account and VPC settings
+$ gcx deploy my-function --gen2 --trigger-http --service-account my-sa@project.iam.gserviceaccount.com --vpc-connector my-connector --ingress-settings ALLOW_INTERNAL_ONLY
+
+# Update an existing function with new source code
+$ gcx deploy my-function
 ```
 
 ## API
 
 You can also use this as a regular old API.
 
+### Deploying a 1st gen function
+
 ```js
-const {call, deploy} = require('gcx');
+const {deploy} = require('gcx');
 
 async function main() {
   await deploy({
     name: 'my-fn-name',
-    region: 'us-central1'
-    ...
+    region: 'us-central1',
+    runtime: 'nodejs20',
+    triggerHTTP: true,
+    allowUnauthenticated: true // Allow public access without authentication
   });
+}
+main().catch(console.error);
+```
+
+### Deploying a 2nd gen function
+
+```js
+const {deploy} = require('gcx');
+
+async function main() {
+  await deploy({
+    name: 'my-fn-name',
+    region: 'us-central1',
+    runtime: 'nodejs22',
+    triggerHTTP: true,
+    gen2: true,
+    concurrency: 10,
+    minInstances: 1,
+    maxInstances: 100,
+    memory: 512,
+    timeout: '60s'
+  });
+}
+main().catch(console.error);
+```
+
+### Calling a function
+
+```js
+const {call} = require('gcx');
+
+async function main() {
   const res = await call({
     functionName: 'my-fn-name',
-    ...
+    region: 'us-central1',
+    data: JSON.stringify({hello: 'world'})
   });
+  console.log(res.data);
 }
 main().catch(console.error);
 ```

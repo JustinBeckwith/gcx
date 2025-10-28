@@ -19,7 +19,7 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "watch": "tsc -p . --watch",
-    "coverage": "c8 report --reporter=json",
+    "coverage": "c8 report --reporter=lcov",
     "fix": "biome check --write .",
     "lint": "biome check ."
   },
@@ -35,9 +35,9 @@
   "author": "Justin Beckwith <justin.beckwith@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@google-cloud/functions": "^4.2.1",
     "archiver": "^7.0.0",
     "globby": "^15.0.0",
-    "googleapis": "^164.0.0",
     "meow": "^14.0.0",
     "ora": "^9.0.0",
     "update-notifier": "^7.0.0"

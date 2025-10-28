@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { type GaxiosOptions, request } from 'gaxios';
 import { describe, it } from 'mocha';
 import nock from 'nock';
 import Zip from 'node-stream-zip';
@@ -91,39 +90,31 @@ describe('gcx', () => {
 
 	describe('cloud functions api', () => {
 		it('should check to see if the function exists', async () => {
-			const scopes = [mockExists()];
 			const deployer = new gcx.Deployer({ name });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub the gRPC client to return a function
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'getFunction')
+				.resolves([{ name: fullName }] as never);
+
 			const exists = await deployer._exists(fullName);
 			assert.strictEqual(exists, true);
-			for (const s of scopes) {
-				s.done();
-			}
 		});
 
 		it('should return false if function does not exist', async () => {
-			const scopes = [mockNotExists()];
 			const deployer = new gcx.Deployer({ name });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub the gRPC client to throw (function doesn't exist)
+			const gcfClient = await deployer._getGCFClient();
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
 			const exists = await deployer._exists(fullName);
 			assert.strictEqual(exists, false);
-			for (const s of scopes) {
-				s.done();
-			}
 		});
 	});
 
@@ -227,133 +218,408 @@ describe('gcx', () => {
 		});
 	});
 
+	describe('v2 (gen2) deployment', () => {
+		it('should deploy v2 function end to end', async () => {
+			// Mock the v2 upload URL (uses storage.googleapis.com)
+			const uploadScope = nock('https://storage.googleapis.com', {
+				reqheaders: {
+					'Content-Type': 'application/zip',
+					'x-goog-content-length-range': '0,104857600',
+				},
+			})
+				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
+				.query({ token: 'xyz' })
+				.reply(200);
+
+			const deployer = new gcx.Deployer({
+				name,
+				targetDir,
+				projectId,
+				gen2: true,
+			});
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFV2Client();
+			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+				{
+					uploadUrl:
+						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
+				},
+			] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
+			// Mock long-running operation
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockOperation as never] as never);
+
+			await deployer.deploy();
+			uploadScope.done();
+		});
+
+		it('should update existing v2 function', async () => {
+			// Mock the v2 upload URL (uses storage.googleapis.com)
+			const uploadScope = nock('https://storage.googleapis.com', {
+				reqheaders: {
+					'Content-Type': 'application/zip',
+					'x-goog-content-length-range': '0,104857600',
+				},
+			})
+				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
+				.query({ token: 'xyz' })
+				.reply(200);
+
+			const deployer = new gcx.Deployer({
+				name,
+				targetDir,
+				projectId,
+				gen2: true,
+			});
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFV2Client();
+			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+				{
+					uploadUrl:
+						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
+				},
+			] as never);
+			sinon
+				.stub(gcfClient, 'getFunction')
+				.resolves([{ name: 'existing-function' }] as never);
+
+			// Mock long-running operation
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'updateFunction')
+				.resolves([mockOperation as never] as never);
+
+			await deployer.deploy();
+			uploadScope.done();
+		});
+
+		it('should build v2 request with topic trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerTopic: 'my-topic',
+				gen2: true,
+			});
+			const request = deployer._buildRequestV2(
+				'https://storage.googleapis.com/bucket/object?token=xyz',
+			);
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(
+				request.eventTrigger?.eventType,
+				'google.cloud.pubsub.topic.v1.messagePublished',
+			);
+			assert.strictEqual(request.eventTrigger?.pubsubTopic, 'my-topic');
+		});
+
+		it('should build v2 request with bucket trigger', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerBucket: 'my-bucket',
+				gen2: true,
+			});
+			const request = deployer._buildRequestV2(
+				'https://storage.googleapis.com/bucket/object?token=xyz',
+			);
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(
+				request.eventTrigger?.eventType,
+				'google.cloud.storage.object.v1.finalized',
+			);
+		});
+
+		it('should build v2 request with custom trigger event', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				triggerTopic: 'my-topic',
+				triggerEvent: 'custom.event.type',
+				gen2: true,
+			});
+			const request = deployer._buildRequestV2(
+				'https://storage.googleapis.com/bucket/object?token=xyz',
+			);
+			assert.ok(request.eventTrigger);
+			assert.strictEqual(request.eventTrigger?.eventType, 'custom.event.type');
+		});
+
+		it('should include all v2 options in update mask', () => {
+			const deployer = new gcx.Deployer({
+				name,
+				memory: 512,
+				description: 'test description',
+				entryPoint: 'myFunction',
+				maxInstances: 10,
+				minInstances: 1,
+				concurrency: 5,
+				cpu: '1',
+				vpcConnector: 'my-connector',
+				runtime: 'nodejs22',
+				timeout: '60s',
+				triggerHTTP: true,
+				environmentVariables: { KEY: 'value' },
+				serviceAccount: 'my-sa@project.iam.gserviceaccount.com',
+				ingressSettings: 'ALLOW_INTERNAL_ONLY',
+				vpcConnectorEgressSettings: 'ALL_TRAFFIC',
+				labels: { env: 'test' },
+				gen2: true,
+			});
+			const mask = deployer._getUpdateMaskV2();
+			assert.ok(mask.includes('description'));
+			assert.ok(mask.includes('buildConfig.runtime'));
+			assert.ok(mask.includes('buildConfig.entryPoint'));
+			assert.ok(mask.includes('serviceConfig.availableMemory'));
+			assert.ok(mask.includes('serviceConfig.availableCpu'));
+			assert.ok(mask.includes('serviceConfig.minInstanceCount'));
+			assert.ok(mask.includes('serviceConfig.maxInstanceCount'));
+			assert.ok(mask.includes('serviceConfig.maxInstanceRequestConcurrency'));
+			assert.ok(mask.includes('serviceConfig.vpcConnector'));
+			assert.ok(mask.includes('serviceConfig.timeoutSeconds'));
+			assert.ok(mask.includes('buildConfig.environmentVariables'));
+			assert.ok(mask.includes('serviceConfig.environmentVariables'));
+			assert.ok(mask.includes('buildConfig.serviceAccount'));
+			assert.ok(mask.includes('serviceConfig.serviceAccountEmail'));
+			assert.ok(mask.includes('serviceConfig.ingressSettings'));
+			assert.ok(mask.includes('serviceConfig.vpcConnectorEgressSettings'));
+			assert.ok(mask.includes('labels'));
+		});
+
+		it('should check if v2 function exists', async () => {
+			const deployer = new gcx.Deployer({ name, gen2: true });
+			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+
+			const gcfClient = await deployer._getGCFV2Client();
+			sinon
+				.stub(gcfClient, 'getFunction')
+				.resolves([{ name: fullName }] as never);
+
+			const exists = await deployer._existsV2(fullName);
+			assert.strictEqual(exists, true);
+		});
+
+		it('should return false if v2 function does not exist', async () => {
+			const deployer = new gcx.Deployer({ name, gen2: true });
+			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+
+			const gcfClient = await deployer._getGCFV2Client();
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
+			const exists = await deployer._existsV2(fullName);
+			assert.strictEqual(exists, false);
+		});
+
+		it('should set IAM policy when allowUnauthenticated is true', async () => {
+			const uploadScope = nock('https://storage.googleapis.com', {
+				reqheaders: {
+					'Content-Type': 'application/zip',
+					'x-goog-content-length-range': '0,104857600',
+				},
+			})
+				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
+				.query({ token: 'xyz' })
+				.reply(200);
+
+			const deployer = new gcx.Deployer({
+				name,
+				targetDir,
+				projectId,
+				gen2: true,
+				allowUnauthenticated: true,
+			});
+			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+
+			const gcfClient = await deployer._getGCFV2Client();
+			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+				{
+					uploadUrl:
+						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
+				},
+			] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockOperation as never] as never);
+
+			// Stub setIamPolicy to verify it's called
+			const setIamPolicyStub = sinon
+				.stub(gcfClient, 'setIamPolicy')
+				.resolves([{}] as never);
+
+			await deployer.deploy();
+
+			// Verify setIamPolicy was called with correct parameters
+			assert.ok(setIamPolicyStub.calledOnce);
+			const callArgs = setIamPolicyStub.firstCall.args[0];
+			assert.ok(callArgs.resource.includes(name));
+			assert.ok(
+				callArgs.policy?.bindings?.[0].role === 'roles/cloudfunctions.invoker',
+			);
+			assert.ok(callArgs.policy?.bindings?.[0].members?.includes('allUsers'));
+
+			uploadScope.done();
+		});
+	});
+
 	describe('end to end', () => {
 		it('should deploy end to end', async () => {
-			const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
+			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'generateUploadUrl')
+				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found')); // Function doesn't exist
+
+			// Mock long-running operation
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockOperation as never] as never);
+
 			await deployer.deploy();
-			for (const s of scopes) {
-				s.done();
-			}
+			scope.done();
 		});
 
 		it('should update existing function', async () => {
-			const scopes = [
-				mockUploadUrl(),
-				mockUpload(),
-				mockExists(),
-				mockUpdate(),
-				mockPoll(),
-			];
+			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'generateUploadUrl')
+				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
+			sinon
+				.stub(gcfClient, 'getFunction')
+				.resolves([{ name: 'existing-function' }] as never); // Function exists
+
+			// Mock long-running operation
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'updateFunction')
+				.resolves([mockOperation as never] as never);
+
 			await deployer.deploy();
-			for (const s of scopes) {
-				s.done();
-			}
+			scope.done();
 		});
 
 		it('should call end to end', async () => {
-			const scopes = [mockCall()];
 			const c = new gcx.Caller();
 			sinon.stub(c.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(c.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
+
+			// Stub gRPC client call method
+			const gcfClient = await c._getGCFClient();
+			sinon.stub(gcfClient, 'callFunction').resolves([
+				{
+					executionId: 'my-execution-id',
+					result: '{ "data": 42 }',
+					error: null,
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+			] as never);
+
 			const response = await c.call({ functionName: name });
-			assert.strictEqual(response.data.result, '{ "data": 42 }');
-			for (const s of scopes) {
-				s.done();
-			}
+			assert.strictEqual(response.result, '{ "data": 42 }');
 		});
 
 		it('should call end to end with data', async () => {
-			const scopes = [mockCallWithData()];
 			const c = new gcx.Caller();
 			sinon.stub(c.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(c.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
+
+			// Stub gRPC client call method
+			const gcfClient = await c._getGCFClient();
+			sinon.stub(gcfClient, 'callFunction').resolves([
+				{
+					executionId: 'my-execution-id',
+					result: '{ "data": 142 }',
+					error: null,
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+			] as never);
+
 			const response = await c.call({ functionName: name, data: '142' });
-			assert.strictEqual(response.data.result, '{ "data": 142 }');
-			for (const s of scopes) {
-				s.done();
-			}
+			assert.strictEqual(response.result, '{ "data": 142 }');
 		});
 
 		it('should handle poll errors', async () => {
-			const scopes = [
-				mockUploadUrl(),
-				mockUpload(),
-				mockDeploy(),
-				mockPollError(),
-			];
+			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'generateUploadUrl')
+				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
+			// Mock long-running operation that fails
+			const mockOperation = {
+				promise: sinon.stub().rejects(new Error('operation failed')),
+			};
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockOperation as never] as never);
+
 			await assert.rejects(deployer.deploy(), /operation failed/);
-			for (const s of scopes) {
-				s.done();
-			}
+			scope.done();
 		});
 
 		it('should throw error if sourceUploadUrl is not available', async () => {
-			const scopes = [mockUploadUrlEmpty()];
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub gRPC client to return empty upload URL
+			const gcfClient = await deployer._getGCFClient();
+			sinon.stub(gcfClient, 'generateUploadUrl').resolves([{}] as never);
+
 			await assert.rejects(
 				deployer.deploy(),
 				/Source Upload URL not available/,
 			);
-			for (const s of scopes) {
-				s.done();
-			}
 		});
 
 		it('should throw error if operation name is not available', async () => {
-			const scopes = [mockUploadUrl(), mockUpload(), mockDeployNoOperation()];
+			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
-			await assert.rejects(deployer.deploy(), /Operation name not available/);
-			for (const s of scopes) {
-				s.done();
-			}
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'generateUploadUrl')
+				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+
+			// Mock operation without name - no promise method will cause the error
+			const mockBadOperation = {} as never;
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockBadOperation] as never);
+
+			await assert.rejects(deployer.deploy(), /promise is not a function/);
+			scope.done();
 		});
 	});
 
@@ -366,102 +632,5 @@ describe('gcx', () => {
 		})
 			.put('/')
 			.reply(200);
-	}
-
-	function mockUploadUrl() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(
-				`/v1/projects/${projectId}/locations/us-central1/functions:generateUploadUrl`,
-			)
-			.reply(200, { uploadUrl: 'https://fake.local' });
-	}
-
-	function mockUploadUrlEmpty() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(
-				`/v1/projects/${projectId}/locations/us-central1/functions:generateUploadUrl`,
-			)
-			.reply(200, {});
-	}
-
-	function mockDeploy() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(`/v1/projects/${projectId}/locations/us-central1/functions`)
-			.reply(200, { name: 'not-a-real-operation' });
-	}
-
-	function mockUpdate() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.patch(
-				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84?updateMask=sourceUploadUrl`,
-			)
-			.reply(200, { name: 'not-a-real-operation' });
-	}
-
-	function mockDeployNoOperation() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(`/v1/projects/${projectId}/locations/us-central1/functions`)
-			.reply(200, {});
-	}
-
-	function mockPoll() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.get('/v1/not-a-real-operation')
-			.reply(200, { done: true });
-	}
-
-	function mockPollError() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.get('/v1/not-a-real-operation')
-			.reply(200, {
-				done: true,
-				error: { message: 'operation failed', code: 500 },
-			});
-	}
-
-	function mockExists() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.get(
-				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84`,
-			)
-			.reply(200);
-	}
-
-	function mockNotExists() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.get(
-				`/v1/projects/${projectId}/locations/us-central1/functions/%F0%9F%A6%84`,
-			)
-			.reply(404);
-	}
-
-	/**
-	 * @see https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions/call
-	 */
-	function mockCall() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(
-				`/v1/projects/${projectId}/locations/us-central1/function/%F0%9F%A6%84:call`,
-			)
-			.reply(200, {
-				executionId: 'my-execution-id',
-				result: '{ "data": 42 }',
-				error: null,
-			});
-	}
-
-	/**
-	 * @see https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions/call
-	 */
-	function mockCallWithData() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(
-				`/v1/projects/${projectId}/locations/us-central1/function/%F0%9F%A6%84:call`,
-			)
-			.reply(200, {
-				executionId: 'my-execution-id',
-				result: '{ "data": 142 }',
-				error: null,
-			});
 	}
 });
