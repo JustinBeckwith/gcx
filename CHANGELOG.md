@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.1.0](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.0.0...gcx-v3.1.0) (2025-10-28)
+
+
+### Features
+
+* add --allow-unauthenticated flag for public functions ([#337](https://github.com/JustinBeckwith/gcx/issues/337)) ([fb80b1b](https://github.com/JustinBeckwith/gcx/commit/fb80b1b4b54f59ba9d1b4569dce90a5a95b52a4a))
+
+
+### Bug Fixes
+
+* **deps:** update dependency googleapis to v164 ([#332](https://github.com/JustinBeckwith/gcx/issues/332)) ([f104729](https://github.com/JustinBeckwith/gcx/commit/f104729d3e2b7098f0264639be4b6e59641ee5bf))
+
 ## [3.0.0](https://github.com/JustinBeckwith/gcx/compare/v2.0.27...main) (2025-10-15)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "gcx",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "An API and CLI for deploying Google Cloud Functions in Node.js.",
   "bin": {
     "gcx": "./build/src/cli.js"
