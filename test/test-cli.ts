@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { type GaxiosOptions, request } from 'gaxios';
 import { describe, it } from 'mocha';
 import nock from 'nock';
 import * as sinon from 'sinon';
@@ -29,16 +28,25 @@ describe('cli', () => {
 
 	describe('Deployment with events', () => {
 		it('should emit progress events during deployment', async () => {
-			const scopes = [mockUploadUrl(), mockUpload(), mockDeploy(), mockPoll()];
+			const scope = mockUpload();
 
 			const deployer = new Deployer({ name, targetDir, projectId });
 			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
-			sinon.stub(deployer.auth, 'getClient').resolves({
-				async request(options: GaxiosOptions) {
-					return request(options);
-				},
-				// biome-ignore lint/suspicious/noExplicitAny: it needs to be any
-			} as any);
+
+			// Stub gRPC client methods
+			const gcfClient = await deployer._getGCFClient();
+			sinon
+				.stub(gcfClient, 'generateUploadUrl')
+				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
+			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found')); // Function doesn't exist
+
+			// Mock long-running operation
+			const mockOperation = {
+				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+			};
+			sinon
+				.stub(gcfClient, 'createFunction')
+				.resolves([mockOperation as never] as never);
 
 			const events: string[] = [];
 			deployer
@@ -56,9 +64,7 @@ describe('cli', () => {
 			assert.ok(events.includes('DEPLOYING'));
 			assert.ok(events.includes('COMPLETE'));
 
-			for (const s of scopes) {
-				s.done();
-			}
+			scope.done();
 		});
 	});
 
@@ -128,25 +134,5 @@ describe('cli', () => {
 		})
 			.put('/')
 			.reply(200);
-	}
-
-	function mockUploadUrl() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(
-				`/v1/projects/${projectId}/locations/us-central1/functions:generateUploadUrl`,
-			)
-			.reply(200, { uploadUrl: 'https://fake.local' });
-	}
-
-	function mockDeploy() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.post(`/v1/projects/${projectId}/locations/us-central1/functions`)
-			.reply(200, { name: 'not-a-real-operation' });
-	}
-
-	function mockPoll() {
-		return nock('https://cloudfunctions.googleapis.com')
-			.get('/v1/not-a-real-operation')
-			.reply(200, { done: true });
 	}
 });

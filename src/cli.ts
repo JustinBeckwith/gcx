@@ -124,6 +124,11 @@ const cli = meow(
 
           Select a VPC connector to access a Serverless VPC network
 
+      --allow-unauthenticated
+          Allow unauthenticated invocations of the function. This will set the
+          IAM policy to allow allUsers to invoke the function. Requires the
+          cloudfunctions.functions.setIamPolicy permission.
+
       --help
           Show this command.
 
@@ -151,6 +156,15 @@ const cli = meow(
 			region: { type: 'string' },
 			maxInstances: { type: 'string' },
 			vpcConnector: { type: 'string' },
+			allowUnauthenticated: { type: 'boolean' },
+			// v2 (gen2) specific flags
+			gen2: { type: 'boolean' },
+			minInstances: { type: 'string' },
+			concurrency: { type: 'string' },
+			cpu: { type: 'string' },
+			ingressSettings: { type: 'string' },
+			vpcConnectorEgressSettings: { type: 'string' },
+			serviceAccount: { type: 'string' },
 		},
 	},
 );
@@ -216,7 +230,7 @@ async function main() {
 async function generateIgnoreFile(targetDirectory: string) {
 	console.log(`
     🤖 I generated a '.gcloudignore' file in the target directory.
-       This file contains a list of glob patterns that should be ingored
+       This file contains a list of glob patterns that should be ignored
        in your deployment. It works just like a .gitignore file 💜
   `);
 	await new Promise<void>((resolve, reject) => {
