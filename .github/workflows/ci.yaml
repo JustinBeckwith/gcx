@@ -7,6 +7,9 @@ name: ci
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         node: [20, 22, 24]
@@ -16,13 +19,14 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: node --version
-      - run: npm install
+      - run: npm ci
       - run: npm test
       - run: npm run coverage
         if: matrix.node == 24
       - uses: codecov/codecov-action@v5
         if: matrix.node == 24
         with:
+          use_oidc: true
           fail_ci_if_error: false
   lint:
     runs-on: ubuntu-latest
@@ -31,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm install
+      - run: npm ci
       - run: npm run lint
   links:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.0](https://github.com/JustinBeckwith/gcx/compare/gcx-v2.0.29...gcx-v3.0.0) (2025-10-15)
+## [3.0.0](https://github.com/JustinBeckwith/gcx/compare/v2.0.27...main) (2025-10-15)
 
 
 ### ⚠ BREAKING CHANGES
