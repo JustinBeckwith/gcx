@@ -37,7 +37,7 @@
   "dependencies": {
     "@google-cloud/functions": "^4.2.1",
     "archiver": "^7.0.0",
-    "globby": "^15.0.0",
+    "globby": "^16.0.0",
     "meow": "^14.0.0",
     "ora": "^9.0.0",
     "update-notifier": "^7.0.0"
