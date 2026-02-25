@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.0...gcx-v3.1.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency globby to v16 ([#340](https://github.com/JustinBeckwith/gcx/issues/340)) ([424c571](https://github.com/JustinBeckwith/gcx/commit/424c5718b705b5047cfef820c84462f1b3c1b0da))
+
 ## [3.1.0](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.0.0...gcx-v3.1.0) (2025-10-28)
 
 
