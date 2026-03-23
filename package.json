@@ -54,7 +54,7 @@
     "nock": "^14.0.0",
     "node-stream-zip": "^1.15.0",
     "sinon": "^21.0.0",
-    "typescript": "~5.9.0"
+    "typescript": "~6.0.0"
   },
   "c8": {
     "exclude": [
