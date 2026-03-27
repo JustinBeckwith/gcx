@@ -23,7 +23,7 @@ jobs:
       - run: npm test
       - run: npm run coverage
         if: matrix.node == 24
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         if: matrix.node == 24
         with:
           use_oidc: true
