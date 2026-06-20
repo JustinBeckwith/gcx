@@ -1,16 +1,15 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it } from 'mocha';
 import nock from 'nock';
 import Zip from 'node-stream-zip';
-import * as sinon from 'sinon';
+import { afterEach, describe, it, vi } from 'vitest';
 import * as gcx from '../src/index.js';
 
 describe('gcx', () => {
 	afterEach(() => {
 		nock.cleanAll();
-		sinon.restore();
+		vi.restoreAllMocks();
 	});
 
 	nock.disableNetConnect();
@@ -92,13 +91,13 @@ describe('gcx', () => {
 		it('should check to see if the function exists', async () => {
 			const deployer = new gcx.Deployer({ name });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub the gRPC client to return a function
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'getFunction')
-				.resolves([{ name: fullName }] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockResolvedValue([
+				{ name: fullName },
+			] as never);
 
 			const exists = await deployer._exists(fullName);
 			assert.strictEqual(exists, true);
@@ -107,11 +106,13 @@ describe('gcx', () => {
 		it('should return false if function does not exist', async () => {
 			const deployer = new gcx.Deployer({ name });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub the gRPC client to throw (function doesn't exist)
 			const gcfClient = await deployer._getGCFClient();
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			const exists = await deployer._exists(fullName);
 			assert.strictEqual(exists, false);
@@ -237,25 +238,29 @@ describe('gcx', () => {
 				projectId,
 				gen2: true,
 			});
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFV2Client();
-			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
 				{
 					uploadUrl:
 						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
 				},
 			] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			// Mock long-running operation
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			await deployer.deploy();
 			uploadScope.done();
@@ -279,27 +284,29 @@ describe('gcx', () => {
 				projectId,
 				gen2: true,
 			});
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFV2Client();
-			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
 				{
 					uploadUrl:
 						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
 				},
 			] as never);
-			sinon
-				.stub(gcfClient, 'getFunction')
-				.resolves([{ name: 'existing-function' }] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockResolvedValue([
+				{ name: 'existing-function' },
+			] as never);
 
 			// Mock long-running operation
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'updateFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'updateFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			await deployer.deploy();
 			uploadScope.done();
@@ -396,12 +403,12 @@ describe('gcx', () => {
 		it('should check if v2 function exists', async () => {
 			const deployer = new gcx.Deployer({ name, gen2: true });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			const gcfClient = await deployer._getGCFV2Client();
-			sinon
-				.stub(gcfClient, 'getFunction')
-				.resolves([{ name: fullName }] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockResolvedValue([
+				{ name: fullName },
+			] as never);
 
 			const exists = await deployer._existsV2(fullName);
 			assert.strictEqual(exists, true);
@@ -410,10 +417,12 @@ describe('gcx', () => {
 		it('should return false if v2 function does not exist', async () => {
 			const deployer = new gcx.Deployer({ name, gen2: true });
 			const fullName = `projects/${projectId}/locations/us-central1/functions/${name}`;
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			const gcfClient = await deployer._getGCFV2Client();
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			const exists = await deployer._existsV2(fullName);
 			assert.strictEqual(exists, false);
@@ -437,34 +446,38 @@ describe('gcx', () => {
 				gen2: true,
 				allowUnauthenticated: true,
 			});
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			const gcfClient = await deployer._getGCFV2Client();
-			sinon.stub(gcfClient, 'generateUploadUrl').resolves([
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
 				{
 					uploadUrl:
 						'https://storage.googleapis.com/gcf-v2-uploads-us-central1-abc123/function.zip?token=xyz',
 				},
 			] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			// Stub setIamPolicy to verify it's called
-			const setIamPolicyStub = sinon
-				.stub(gcfClient, 'setIamPolicy')
-				.resolves([{}] as never);
+			const setIamPolicyStub = vi
+				.spyOn(gcfClient, 'setIamPolicy')
+				.mockResolvedValue([{}] as never);
 
 			await deployer.deploy();
 
 			// Verify setIamPolicy was called with correct parameters
-			assert.ok(setIamPolicyStub.calledOnce);
-			const callArgs = setIamPolicyStub.firstCall.args[0];
+			assert.strictEqual(setIamPolicyStub.mock.calls.length, 1);
+			const callArgs = setIamPolicyStub.mock.calls[0][0];
 			assert.ok(callArgs.resource.includes(name));
 			assert.ok(
 				callArgs.policy?.bindings?.[0].role === 'roles/cloudfunctions.invoker',
@@ -479,22 +492,26 @@ describe('gcx', () => {
 		it('should deploy end to end', async () => {
 			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'generateUploadUrl')
-				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found')); // Function doesn't exist
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
+				{ uploadUrl: 'https://fake.local' },
+			] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			); // Function doesn't exist
 
 			// Mock long-running operation
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			await deployer.deploy();
 			scope.done();
@@ -503,24 +520,26 @@ describe('gcx', () => {
 		it('should update existing function', async () => {
 			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'generateUploadUrl')
-				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
-			sinon
-				.stub(gcfClient, 'getFunction')
-				.resolves([{ name: 'existing-function' }] as never); // Function exists
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
+				{ uploadUrl: 'https://fake.local' },
+			] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockResolvedValue([
+				{ name: 'existing-function' },
+			] as never); // Function exists
 
 			// Mock long-running operation
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'updateFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'updateFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			await deployer.deploy();
 			scope.done();
@@ -528,11 +547,11 @@ describe('gcx', () => {
 
 		it('should call end to end', async () => {
 			const c = new gcx.Caller();
-			sinon.stub(c.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(c.auth, projectId);
 
 			// Stub gRPC client call method
 			const gcfClient = await c._getGCFClient();
-			sinon.stub(gcfClient, 'callFunction').resolves([
+			vi.spyOn(gcfClient, 'callFunction').mockResolvedValue([
 				{
 					executionId: 'my-execution-id',
 					result: '{ "data": 42 }',
@@ -546,11 +565,11 @@ describe('gcx', () => {
 
 		it('should call end to end with data', async () => {
 			const c = new gcx.Caller();
-			sinon.stub(c.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(c.auth, projectId);
 
 			// Stub gRPC client call method
 			const gcfClient = await c._getGCFClient();
-			sinon.stub(gcfClient, 'callFunction').resolves([
+			vi.spyOn(gcfClient, 'callFunction').mockResolvedValue([
 				{
 					executionId: 'my-execution-id',
 					result: '{ "data": 142 }',
@@ -565,22 +584,24 @@ describe('gcx', () => {
 		it('should handle poll errors', async () => {
 			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'generateUploadUrl')
-				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
+				{ uploadUrl: 'https://fake.local' },
+			] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			// Mock long-running operation that fails
 			const mockOperation = {
-				promise: sinon.stub().rejects(new Error('operation failed')),
+				promise: vi.fn().mockRejectedValue(new Error('operation failed')),
 			};
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			await assert.rejects(deployer.deploy(), /operation failed/);
 			scope.done();
@@ -588,11 +609,11 @@ describe('gcx', () => {
 
 		it('should throw error if sourceUploadUrl is not available', async () => {
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client to return empty upload URL
 			const gcfClient = await deployer._getGCFClient();
-			sinon.stub(gcfClient, 'generateUploadUrl').resolves([{}] as never);
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([{}] as never);
 
 			await assert.rejects(
 				deployer.deploy(),
@@ -603,20 +624,22 @@ describe('gcx', () => {
 		it('should throw error if operation name is not available', async () => {
 			const scope = mockUpload();
 			const deployer = new gcx.Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'generateUploadUrl')
-				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found'));
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
+				{ uploadUrl: 'https://fake.local' },
+			] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			);
 
 			// Mock operation without name - no promise method will cause the error
 			const mockBadOperation = {} as never;
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockBadOperation] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockBadOperation,
+			] as never);
 
 			await assert.rejects(deployer.deploy(), /promise is not a function/);
 			scope.done();
@@ -632,5 +655,12 @@ describe('gcx', () => {
 		})
 			.put('/')
 			.reply(200);
+	}
+
+	function mockProjectId(auth: gcx.GCXClient['auth'], projectId: string) {
+		const authWithProjectId = auth as unknown as {
+			getProjectId: () => Promise<string>;
+		};
+		vi.spyOn(authWithProjectId, 'getProjectId').mockResolvedValue(projectId);
 	}
 });
