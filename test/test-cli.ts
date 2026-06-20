@@ -1,15 +1,14 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it } from 'mocha';
 import nock from 'nock';
-import * as sinon from 'sinon';
+import { afterEach, describe, it, vi } from 'vitest';
 import { Deployer, ProgressEvent } from '../src/index.js';
 
 describe('cli', () => {
 	afterEach(() => {
 		nock.cleanAll();
-		sinon.restore();
+		vi.restoreAllMocks();
 	});
 
 	nock.disableNetConnect();
@@ -31,22 +30,26 @@ describe('cli', () => {
 			const scope = mockUpload();
 
 			const deployer = new Deployer({ name, targetDir, projectId });
-			sinon.stub(deployer.auth, 'getProjectId').resolves(projectId);
+			mockProjectId(deployer.auth, projectId);
 
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
-			sinon
-				.stub(gcfClient, 'generateUploadUrl')
-				.resolves([{ uploadUrl: 'https://fake.local' }] as never);
-			sinon.stub(gcfClient, 'getFunction').rejects(new Error('Not found')); // Function doesn't exist
+			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
+				{ uploadUrl: 'https://fake.local' },
+			] as never);
+			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
+				new Error('Not found'),
+			); // Function doesn't exist
 
 			// Mock long-running operation
 			const mockOperation = {
-				promise: sinon.stub().resolves([{ name: 'test-function', done: true }]),
+				promise: vi
+					.fn()
+					.mockResolvedValue([{ name: 'test-function', done: true }]),
 			};
-			sinon
-				.stub(gcfClient, 'createFunction')
-				.resolves([mockOperation as never] as never);
+			vi.spyOn(gcfClient, 'createFunction').mockResolvedValue([
+				mockOperation as never,
+			] as never);
 
 			const events: string[] = [];
 			deployer
@@ -134,5 +137,12 @@ describe('cli', () => {
 		})
 			.put('/')
 			.reply(200);
+	}
+
+	function mockProjectId(auth: Deployer['auth'], projectId: string) {
+		const authWithProjectId = auth as unknown as {
+			getProjectId: () => Promise<string>;
+		};
+		vi.spyOn(authWithProjectId, 'getProjectId').mockResolvedValue(projectId);
 	}
 });
