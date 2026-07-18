@@ -7,7 +7,7 @@ import process from 'node:process';
 import { Readable } from 'node:stream';
 import type { protos } from '@google-cloud/functions';
 import { v1, v2 } from '@google-cloud/functions';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { globby } from 'globby';
 import { GoogleAuth, type GoogleAuthOptions } from 'google-auth-library';
 
@@ -537,7 +537,7 @@ export class Deployer extends GCXClient {
 		return new Promise<string>(async (resolve, reject) => {
 			const zipPath = `${path.join(os.tmpdir(), randomUUID())}.zip`;
 			const output = fs.createWriteStream(zipPath);
-			const archive = archiver('zip');
+			const archive = new ZipArchive();
 			output.on('close', () => {
 				resolve(zipPath);
 			});
