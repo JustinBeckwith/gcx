@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "@google-cloud/functions": "^4.2.1",
-    "archiver": "^7.0.0",
+    "archiver": "^8.0.0",
     "globby": "^16.0.0",
     "meow": "^14.0.0",
     "ora": "^9.0.0",
@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/node": "^24.0.0",
     "@types/update-notifier": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.15",
