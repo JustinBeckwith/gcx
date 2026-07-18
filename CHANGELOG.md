@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.1...gcx-v3.1.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency archiver to v8 ([#361](https://github.com/JustinBeckwith/gcx/issues/361)) ([2a3e115](https://github.com/JustinBeckwith/gcx/commit/2a3e115835ac6998004e165e04e5454bc43639ac))
+
 ## [3.1.1](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.0...gcx-v3.1.1) (2026-02-25)
 
 
