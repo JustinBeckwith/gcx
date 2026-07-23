@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: JustinBeckwith/linkinator-action@0aba655887759067b44761b8dc0ab8b275e08275 # v2
+      - uses: JustinBeckwith/linkinator-action@b01779287d9a8423ef7d222fb1c3ba5a2b11ac58 # v2
         with:
           # Release Please links to the new tag before the tag exists.
           linksToSkip: 'https://github\.com/JustinBeckwith/gcx/compare/.*'
