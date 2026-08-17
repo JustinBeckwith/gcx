@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.3](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.2...gcx-v3.1.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @google-cloud/functions to v5 ([a520fab](https://github.com/JustinBeckwith/gcx/commit/a520faba6dce0ff7a5ccb64e6ffb92b97e2197c2))
+* **docs:** replace broken service account link ([1c5e155](https://github.com/JustinBeckwith/gcx/commit/1c5e155900a6f997b95060f0f1c82580b7b9f68d))
+
 ## [3.1.2](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.1...gcx-v3.1.2) (2026-07-18)
 
 
