@@ -290,7 +290,7 @@ One of the reasons this library exists is to provide a nodejs native deployment 
 
 For this method, you'll need to [create a service account](https://cloud.google.com/docs/authentication/getting-started), and download a key.
 
-1. In the GCP Console, go to the [Create service account key](https://console.cloud.google.com/apis/credentials/serviceaccountkey?_ga=2.44822625.-475179053.1491320180) page.
+1. Follow the Google Cloud instructions to [create a service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
 1. From the Service account drop-down list, select New service account.
 1. In the Service account name field, enter a name.
 1. From the Role drop-down list, select Project > Owner.
