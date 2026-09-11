@@ -46,10 +46,10 @@
     "@types/archiver": "^8.0.0",
     "@types/node": "^24.0.0",
     "@types/update-notifier": "^6.0.0",
-    "@vitest/coverage-v8": "^4.0.15",
+    "@vitest/coverage-v8": "^5.0.0",
     "nock": "^14.0.0",
     "node-stream-zip": "^1.15.0",
     "typescript": "~7.0.0",
-    "vitest": "^4.0.15"
+    "vitest": "^5.0.0"
   }
 }
