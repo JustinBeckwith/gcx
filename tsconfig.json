@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
     "outDir": "build",
     "module": "ES2022",
     "moduleResolution": "Bundler",
