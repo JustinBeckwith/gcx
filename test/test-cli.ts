@@ -136,7 +136,7 @@ describe('cli', () => {
 			},
 		})
 			.put('/')
-			.reply(200);
+			.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 	}
 
 	function mockProjectId(auth: Deployer['auth'], projectId: string) {

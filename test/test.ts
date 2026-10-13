@@ -230,7 +230,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -276,7 +276,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -437,7 +437,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -654,7 +654,7 @@ describe('gcx', () => {
 			},
 		})
 			.put('/')
-			.reply(200);
+			.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 	}
 
 	function mockProjectId(auth: gcx.GCXClient['auth'], projectId: string) {
