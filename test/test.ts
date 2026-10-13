@@ -82,7 +82,7 @@ describe('gcx', () => {
 		it('should PUT the file to Google Cloud Storage', async () => {
 			const deployer = new gcx.Deployer({ name, targetDir });
 			const scope = mockUpload();
-			await deployer._upload(zipFile, 'https://fake.local');
+			await deployer._upload(zipFile, 'https://storage.googleapis.com');
 			scope.done();
 		});
 	});
@@ -230,7 +230,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -276,7 +276,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -437,7 +437,7 @@ describe('gcx', () => {
 			})
 				.put('/gcf-v2-uploads-us-central1-abc123/function.zip')
 				.query({ token: 'xyz' })
-				.reply(200);
+				.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 
 			const deployer = new gcx.Deployer({
 				name,
@@ -497,7 +497,7 @@ describe('gcx', () => {
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
 			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
-				{ uploadUrl: 'https://fake.local' },
+				{ uploadUrl: 'https://storage.googleapis.com' },
 			] as never);
 			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
 				new Error('Not found'),
@@ -525,7 +525,7 @@ describe('gcx', () => {
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
 			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
-				{ uploadUrl: 'https://fake.local' },
+				{ uploadUrl: 'https://storage.googleapis.com' },
 			] as never);
 			vi.spyOn(gcfClient, 'getFunction').mockResolvedValue([
 				{ name: 'existing-function' },
@@ -589,7 +589,7 @@ describe('gcx', () => {
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
 			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
-				{ uploadUrl: 'https://fake.local' },
+				{ uploadUrl: 'https://storage.googleapis.com' },
 			] as never);
 			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
 				new Error('Not found'),
@@ -629,7 +629,7 @@ describe('gcx', () => {
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
 			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
-				{ uploadUrl: 'https://fake.local' },
+				{ uploadUrl: 'https://storage.googleapis.com' },
 			] as never);
 			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
 				new Error('Not found'),
@@ -647,14 +647,14 @@ describe('gcx', () => {
 	});
 
 	function mockUpload() {
-		return nock('https://fake.local', {
+		return nock('https://storage.googleapis.com', {
 			reqheaders: {
 				'Content-Type': 'application/zip',
 				'x-goog-content-length-range': '0,104857600',
 			},
 		})
 			.put('/')
-			.reply(200);
+			.reply(200, '', { 'Content-Length': '0', Connection: 'close' });
 	}
 
 	function mockProjectId(auth: gcx.GCXClient['auth'], projectId: string) {
