@@ -35,7 +35,7 @@ describe('cli', () => {
 			// Stub gRPC client methods
 			const gcfClient = await deployer._getGCFClient();
 			vi.spyOn(gcfClient, 'generateUploadUrl').mockResolvedValue([
-				{ uploadUrl: 'https://fake.local' },
+				{ uploadUrl: 'https://storage.googleapis.com' },
 			] as never);
 			vi.spyOn(gcfClient, 'getFunction').mockRejectedValue(
 				new Error('Not found'),
@@ -129,7 +129,7 @@ describe('cli', () => {
 	});
 
 	function mockUpload() {
-		return nock('https://fake.local', {
+		return nock('https://storage.googleapis.com', {
 			reqheaders: {
 				'Content-Type': 'application/zip',
 				'x-goog-content-length-range': '0,104857600',
