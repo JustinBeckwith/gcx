@@ -44,7 +44,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",
     "@types/archiver": "^8.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.0.0",
     "@types/update-notifier": "^6.0.0",
     "@vitest/coverage-v8": "^5.0.0",
     "nock": "^15.0.0",
