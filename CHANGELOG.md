@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.4](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.3...gcx-v3.1.4) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ora to v10 ([#400](https://github.com/JustinBeckwith/gcx/issues/400)) ([9002a6d](https://github.com/JustinBeckwith/gcx/commit/9002a6d5e4224489de14212b70cc5dfaabf29c2b))
+
 ## [3.1.3](https://github.com/JustinBeckwith/gcx/compare/gcx-v3.1.2...gcx-v3.1.3) (2026-08-30)
 
 
